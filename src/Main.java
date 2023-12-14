@@ -7,6 +7,7 @@ public class Main {
     public static void main(String[] args) {
         PApplet.main(WizardView.class);
 
+        /*
         WizardModel w = new WizardModel();
         for (int i = 0; i < 4; i++) w.addPlayer(new Player());
         w.dealCards();
@@ -21,5 +22,6 @@ public class Main {
         System.out.println(w);
         w.endTrick();
         System.out.println(w);
+        */
     }
 }

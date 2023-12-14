@@ -21,15 +21,15 @@ import java.util.function.UnaryOperator;
 
 public class WizardModel {
     // Maybe change this to an Array and make the controller handle the players adding?
-    public ArrayList<Player> players = new ArrayList<>(6);
+    private final List<Player> players;
     // The cards in the trick are stored in the order they are played, sadly has to be HashMap, because there is no way of knowing which player played which card otherwise
-    ArrayList<Byte> trick =  new ArrayList<>(6);
+    private final List<Byte> trick;
     // Stores the current round and the starting player
-    private int round = 0;
+    private final int round;
     // Player that is making the first move in the current trick, sadly necessary as the winner of a trick begins the next round and this can't be stored without a variable
-    private int startingPlayer = 0;
+    private final int startingPlayer;
     // Stores the trump-card, only the color is necessary, but a byte is not expensive memory-wise
-    private byte trump;
+    private final byte trump;
     // Lambda-Expressions to apply according byte-masks
     private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
     private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
@@ -37,16 +37,27 @@ public class WizardModel {
     private final byte wizard = 0b00001110;
     private final byte fool = 0b00000000;
 
+    private WizardModel(List<Player> players, List<Byte> trick, int round, int startingPlayer, byte trump) {
+        this.players = players;
+        this.trick = trick;
+        this.round = round;
+        this.startingPlayer = startingPlayer;
+        this.trump = trump;
+    }
+    public WizardModel() {
+        this(List.of(), List.of(), 0, 0, (byte) 0);
+    }
+
     /**
      * Method that deals out cards to the players.
      */
-    public void dealCards() {
+    public WizardModel dealCards() {
         ArrayList<Byte> deck = new ArrayList<>(List.of((byte) 0,(byte) 1,(byte) 2,(byte) 3,(byte) 4,(byte) 5,(byte) 6,(byte) 7,(byte) 8,(byte) 9,(byte) 10,(byte) 11,(byte) 12,(byte) 13,(byte) 14,(byte) 64,(byte) 65,(byte) 66,(byte) 67,(byte) 68,(byte) 69,(byte) 70,(byte) 71,(byte) 72,(byte) 73,(byte) 74,(byte) 75,(byte) 76,(byte) 77,(byte) 78,(byte) 128,(byte) 129,(byte) 130,(byte) 131,(byte) 132,(byte) 133,(byte) 134,(byte) 135,(byte) 136,(byte) 137,(byte) 138,(byte) 139,(byte) 140,(byte) 141,(byte) 142,(byte) 192,(byte) 193,(byte) 194,(byte) 195,(byte) 196,(byte) 197,(byte) 198,(byte) 199,(byte) 200,(byte) 201,(byte) 202,(byte) 203,(byte) 204,(byte) 205,(byte) 206));
+        List<Player> p = new ArrayList<>(players);
         for (int i = 0; i < round+1; i++) {
-            players.forEach(p -> p.addCard(deck.remove((int) (Math.random()*deck.size()))));
+            p.replaceAll(player -> player.addCard(deck.remove((int) (Math.random()*deck.size()))));
         }
-        trump = deck.remove((int) (Math.random()*deck.size()));
-        System.out.println("Trump: " + colorMask.apply(trump));
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, deck.remove((int) (Math.random()*deck.size())));
         /* Function used to generate all the cards in the list
         for (int i = 0, j = -1; i < 60; i++) {
             if (i%15 == 0) j++;
@@ -59,13 +70,24 @@ public class WizardModel {
      * Method which plays a card into the trick, while making sure that no wizard rules are broken. Keep in mind that this only works if the controller makes sure that the player who's turn it is plays
      * @param card the card to be played
      */
-    public void playCard(byte card) {
-        // Has problems if a player whose turn it is not plays a card, won't be possible with the controller though
+    public WizardModel playCard(byte card) {
 
         boolean wizardPlayedFirst = (!trick.isEmpty() && trick.stream().filter(c -> valueMask.apply(c) != (byte) 0).findFirst().orElse((byte) 15).equals(wizard));
-        // equals fool, if no non-fool card has been played yet
+
         byte firstNonFoolCard = trick.stream().filter(c -> valueMask.apply(c) != (byte) 0).findFirst().orElse(card);
-        // maybe turn this into a separate function?
+
+
+        if (trick.size() == players.size()) {
+            System.out.println("All players have already played a card this trick.");
+            return this;
+        }
+
+        // also prevents players whose turn it is not from playing a card, as all cards only occur once and only the current player has the playable cards this trick
+        // also allows for only valid cards to be played, as only valid cards are dealt out
+        if (!players.get(trick.size()).getHand().contains(card)) {
+            System.out.println("Player " + trick.size() + " does not have the card he is trying to play.");
+            return this;
+        }
 
         if (!wizardPlayedFirst &&
                 valueMask.apply(card) != wizard  &&
@@ -76,24 +98,27 @@ public class WizardModel {
                 players.get(trick.size()).getHand().stream().anyMatch(c -> colorMask.apply(c).equals(colorMask.apply(firstNonFoolCard))) // this part is necessary, because it is possible that a player does not have a matching color on his hand
         ) {
             System.out.println("Player " + trick.size() + " must play a card of the same color as the first card played this trick.");
-            return;
+            return this;
         }
 
         // Set required color and trump flags, if they apply
-        players.get(trick.size()).removeCard(card);
-        System.out.println(card);
+        List<Player> p = new ArrayList<>(players);
+        List<Byte> t = new ArrayList<>(trick);
+
+        // TODO: Fix card removal, p.get(trick.size()) needs to be replaced, but I don't know how to do that
+        p.get(trick.size()).removeCard(card);
         if (colorMask.apply(card).equals(colorMask.apply(firstNonFoolCard))) card |= 0b00010000;
-        System.out.println(card);
         if (colorMask.apply(card).equals(colorMask.apply(trump))) card |= 0b00100000;
-        System.out.println(card);
-        trick.add(card);
+        t.add(card);
+        return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump);
     }
 
-    public void endTrick() {
+    public WizardModel endTrick() {
         if (trick.size() != players.size()) {
             System.out.println("Not all players have played a card yet.");
-            return;
+            return this;
         }
+        List<Player> p = new ArrayList<>(players);
         int winner = 0;
         byte winningCard;
 
@@ -112,35 +137,36 @@ public class WizardModel {
             }
         }
 
-        System.out.println("Winner: " + winner);
-
-        startingPlayer = winner;
-        players.get(winner).addWonTrick();
-        trick.clear();
-        if (players.get(winner).getHand().isEmpty()) endRound();
+        // TODO: p.get(winner) needs to be replaced, but I don't know how to do that
+        p.get(winner).addWonTrick();
+        return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0);
     }
 
-    private void endRound() {
-        players.forEach(p -> p.addScore(p.getCalledTricks()-p.getWonTricks() == 0 ? 20+p.getWonTricks()*10 : -Math.abs(p.getCalledTricks()-p.getWonTricks())*10));
-        round++;
-        startingPlayer = round;
+    private WizardModel endRound() {
+        players.forEach(p -> p.addToScore(p.getCalledTricks()-p.getWonTricks() == 0 ? 20+p.getWonTricks()*10 : -Math.abs(p.getCalledTricks()-p.getWonTricks())*10));
+        return new WizardModel(players, new ArrayList<Byte>(6), round+1, round+1, (byte) 0);
     }
 
     public boolean isGameOver() {
         return round == (60/players.size())+1;
     }
 
-    public void addPlayer(Player player) {
-        players.add(player);
+    public WizardModel addPlayer(Player player) {
+        List<Player> p = new ArrayList<>(players);
+        p.add(player);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump);
+    }
+
+    // for testing purposes
+    public Player getPlayer(int index) {
+        return players.get(index);
     }
 
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
         trick.forEach(c -> result.append(valueMask.apply(c)).append("\n"));
-        for (Player player : players) {
-            result.append(player.toString().formatted(players.indexOf(player))).append("\n");
-        }
+        players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
         return result.toString();
     }
 }
