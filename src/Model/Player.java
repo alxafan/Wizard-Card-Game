@@ -68,16 +68,7 @@ public class Player {
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder("Player %d: ");
-        for (byte card : hand) {
-            String color = switch (colorMask.apply(card)) {
-                case (byte) 0b00000000 -> "Red";
-                case (byte) 0b01000000 -> "Green";
-                case (byte) 0b10000000 -> "Blue";
-                case (byte) 0b11000000 -> "Yellow";
-                default -> "";
-            };
-            result.append((valueMask.apply(card) % 15)).append(" ").append(color).append("\n");
-        }
+        hand.forEach(card -> result.append((valueMask.apply(card) % 15)).append(" ").append(WizardModel.cardColorToString(card)).append("\n"));
         return result.toString();
     }
 }

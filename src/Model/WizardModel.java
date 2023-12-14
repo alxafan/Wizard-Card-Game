@@ -1,18 +1,16 @@
 package Model;
 
 /* Jshell Testing:
-WizardModel w = new WizardModel();
-for (int i = 0; i < 4; i++) w.addPlayer(new Player());
-w.dealCards();
-w
-w.playCard(w.players.get(0).getHand().get(0));
-w.playCard(w.players.get(1).getHand().get(0));
-w.playCard(w.players.get(2).getHand().get(0));
-w.playCard(w.players.get(3).getHand().get(0));
-w.endTrick();
-w.dealCards();
-w
-w.playCard(w.players.get(0).getHand().get(0));
+WizardModel w  =new WizardModel();
+for (int i = 0; i < 4; i++) w = w.addPlayer(new Player());
+System.out.println(w = w.dealCards());
+System.out.println(w = w.playCard(w.getPlayer(0).getHand().get(0)));
+System.out.println(w = w.playCard(w.getPlayer(1).getHand().get(0)));
+System.out.println(w = w.playCard(w.getPlayer(2).getHand().get(0)));
+System.out.println(w = w.playCard(w.getPlayer(3).getHand().get(0)));
+System.out.println(w = w.endTrick());
+System.out.println(w = w.endRound());
+System.out.println(w = w.dealCards());
  */
 
 import java.util.ArrayList;
@@ -31,8 +29,8 @@ public class WizardModel {
     // Stores the trump-card, only the color is necessary, but a byte is not expensive memory-wise
     private final byte trump;
     // Lambda-Expressions to apply according byte-masks
-    private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
-    private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
+    private static final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
+    private static final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
     // Card value 14, no need for a fool version, because it's equal to 0
     private final byte wizard = 0b00001110;
     private final byte fool = 0b00000000;
@@ -76,6 +74,8 @@ public class WizardModel {
 
         byte firstNonFoolCard = trick.stream().filter(c -> valueMask.apply(c) != (byte) 0).findFirst().orElse(card);
 
+        int playerIndex = trick.size();
+
 
         if (trick.size() == players.size()) {
             System.out.println("All players have already played a card this trick.");
@@ -105,8 +105,7 @@ public class WizardModel {
         List<Player> p = new ArrayList<>(players);
         List<Byte> t = new ArrayList<>(trick);
 
-        // TODO: Fix card removal, p.get(trick.size()) needs to be replaced, but I don't know how to do that
-        p.get(trick.size()).removeCard(card);
+        p = replaceAtIndex(p,playerIndex,p.get(playerIndex).removeCard(card));
         if (colorMask.apply(card).equals(colorMask.apply(firstNonFoolCard))) card |= 0b00010000;
         if (colorMask.apply(card).equals(colorMask.apply(trump))) card |= 0b00100000;
         t.add(card);
@@ -136,15 +135,17 @@ public class WizardModel {
                 break;
             }
         }
+        // Testing purposes
+        System.out.println("Player " + winner + " won the trick.");
 
-        // TODO: p.get(winner) needs to be replaced, but I don't know how to do that
-        p.get(winner).addWonTrick();
+        p = replaceAtIndex(p,winner,p.get(winner).addWonTrick());
         return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0);
     }
 
-    private WizardModel endRound() {
-        players.forEach(p -> p.addToScore(p.getCalledTricks()-p.getWonTricks() == 0 ? 20+p.getWonTricks()*10 : -Math.abs(p.getCalledTricks()-p.getWonTricks())*10));
-        return new WizardModel(players, new ArrayList<Byte>(6), round+1, round+1, (byte) 0);
+    public WizardModel endRound() {
+        List<Player> p = new ArrayList<>(players);
+        p.replaceAll(player -> player.addToScore(player.getCalledTricks()-player.getWonTricks() == 0 ? 20+player.getWonTricks()*10 : -Math.abs(player.getCalledTricks()-player.getWonTricks())*10));
+        return new WizardModel(List.copyOf(p), new ArrayList<Byte>(6), round+1, round+1, (byte) 0);
     }
 
     public boolean isGameOver() {
@@ -162,10 +163,31 @@ public class WizardModel {
         return players.get(index);
     }
 
+    // function to replace an element in a list at a given index, only way to keep the list immutable
+    private <T> List<T> replaceAtIndex(List<T> list, int index, T element) {
+        List<T> l = new ArrayList<>(list);
+        l.set(index, element);
+        return List.copyOf(l);
+    }
+
+    // static method to extract the color of a card
+    static String cardColorToString(byte card) {
+        return switch (colorMask.apply(card)) {
+            case (byte) 0b00000000 -> "Red";
+            case (byte) 0b01000000 -> "Green";
+            case (byte) 0b10000000 -> "Blue";
+            case (byte) 0b11000000 -> "Yellow";
+            default -> "";
+        };
+    }
+
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
-        trick.forEach(c -> result.append(valueMask.apply(c)).append("\n"));
+        result.append("Round: ").append(round).append("\n");
+        result.append("Trump: ").append(cardColorToString(trump)).append("\n");
+        // consider making a method akin to cardColorToString for the value
+        trick.forEach(c -> result.append(valueMask.apply(c)%15).append(cardColorToString(c)).append("\n"));
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
         return result.toString();
     }
