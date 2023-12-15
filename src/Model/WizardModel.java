@@ -1,13 +1,14 @@
 package Model;
 
 /* Jshell Testing:
-WizardModel w  =new WizardModel();
+WizardModel w = new WizardModel();
 for (int i = 0; i < 4; i++) w = w.addPlayer(new Player());
 System.out.println(w = w.dealCards());
 System.out.println(w = w.playCard(w.getPlayer(0).getHand().get(0)));
 System.out.println(w = w.playCard(w.getPlayer(1).getHand().get(0)));
 System.out.println(w = w.playCard(w.getPlayer(2).getHand().get(0)));
 System.out.println(w = w.playCard(w.getPlayer(3).getHand().get(0)));
+System.out.println(w.undoPlayCard()); // Änderung wird nicht gespeichert
 System.out.println(w = w.endTrick());
 System.out.println(w = w.endRound());
 System.out.println(w = w.dealCards());
@@ -76,7 +77,6 @@ public class WizardModel {
 
         int playerIndex = trick.size();
 
-
         if (trick.size() == players.size()) {
             System.out.println("All players have already played a card this trick.");
             return this;
@@ -112,6 +112,18 @@ public class WizardModel {
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump);
     }
 
+    // Only works during the current trick, can't undo a round
+    public WizardModel undoPlayCard() {
+        if (trick.isEmpty()) {
+            System.out.println("No cards have been played yet.");
+            return this;
+        }
+        List<Player> p = new ArrayList<>(players);
+        List<Byte> t = new ArrayList<>(trick);
+        p = replaceAtIndex(p,trick.size()-1, p.get(trick.size()-1).addCard(t.remove(t.size()-1)));
+        return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump);
+    }
+
     public WizardModel endTrick() {
         if (trick.size() != players.size()) {
             System.out.println("Not all players have played a card yet.");
@@ -143,6 +155,10 @@ public class WizardModel {
     }
 
     public WizardModel endRound() {
+        if (players.stream().allMatch(player -> player.getHand().isEmpty())) {
+            System.out.println("Not all players have played all their cards yet.");
+            return this;
+        }
         List<Player> p = new ArrayList<>(players);
         p.replaceAll(player -> player.addToScore(player.getCalledTricks()-player.getWonTricks() == 0 ? 20+player.getWonTricks()*10 : -Math.abs(player.getCalledTricks()-player.getWonTricks())*10));
         return new WizardModel(List.copyOf(p), new ArrayList<Byte>(6), round+1, round+1, (byte) 0);
