@@ -4,10 +4,11 @@ package Model;
 WizardModel w = new WizardModel();
 for (int i = 0; i < 4; i++) w = w.addPlayer(new Player());
 System.out.println(w = w.dealCards());
-System.out.println(w = w.playCard(w.getPlayer(0).getHand().get(0)));
-System.out.println(w = w.playCard(w.getPlayer(1).getHand().get(0)));
-System.out.println(w = w.playCard(w.getPlayer(2).getHand().get(0)));
-System.out.println(w = w.playCard(w.getPlayer(3).getHand().get(0)));
+System.out.println(w = w.playCard(w.getPlayer(0).getCard(0)));
+System.out.println(w = w.playCard(w.getPlayer(1).getCard(0)));
+System.out.println(w = w.playCard(w.getPlayer(2).getCard(0)));
+System.out.println(w.endRound()); // Änderung wird nicht gespeichert
+System.out.println(w = w.playCard(w.getPlayer(3).getCard(0)));
 System.out.println(w.undoPlayCard()); // Änderung wird nicht gespeichert
 System.out.println(w = w.endTrick());
 System.out.println(w = w.endRound());
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-public class WizardModel {
+public class WizardModel implements IWizardModel{
     // Maybe change this to an Array and make the controller handle the players adding?
     private final List<Player> players;
     // The cards in the trick are stored in the order they are played, sadly has to be HashMap, because there is no way of knowing which player played which card otherwise
@@ -125,7 +126,7 @@ public class WizardModel {
     }
 
     public WizardModel endTrick() {
-        if (trick.size() != players.size()) {
+        if (!isTrickOver()) {
             System.out.println("Not all players have played a card yet.");
             return this;
         }
@@ -155,8 +156,8 @@ public class WizardModel {
     }
 
     public WizardModel endRound() {
-        if (players.stream().allMatch(player -> player.getHand().isEmpty())) {
-            System.out.println("Not all players have played all their cards yet.");
+        if (!isRoundOver()) {
+            System.out.println("Not all players have played all their cards yet, or the trick still needs to be ended.");
             return this;
         }
         List<Player> p = new ArrayList<>(players);
@@ -168,9 +169,26 @@ public class WizardModel {
         return round == (60/players.size())+1;
     }
 
-    public WizardModel addPlayer(Player player) {
+    @Override
+    public boolean isTrickOver() {
+        return trick.size() == players.size();
+    }
+
+    @Override
+    public boolean isRoundOver() {
+        return players.stream().allMatch(player -> player.getHand().isEmpty()) && trick.isEmpty();
+    }
+
+    public WizardModel addPlayer() {
+        Player player = new Player(players.size());
         List<Player> p = new ArrayList<>(players);
         p.add(player);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump);
+    }
+
+    public WizardModel setTricksCalled(int playerIndex, int tricksCalled) {
+        List<Player> p = new ArrayList<>(players);
+        p = replaceAtIndex(p,playerIndex,p.get(playerIndex).setTricksCalled(tricksCalled));
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump);
     }
 
@@ -197,13 +215,18 @@ public class WizardModel {
         };
     }
 
+    static int cardValueToInteger(byte card) {
+        return valueMask.apply(card)%15;
+    }
+
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
         result.append("Round: ").append(round).append("\n");
         result.append("Trump: ").append(cardColorToString(trump)).append("\n");
-        // consider making a method akin to cardColorToString for the value
-        trick.forEach(c -> result.append(valueMask.apply(c)%15).append(cardColorToString(c)).append("\n"));
+        result.append("Trick: ").append("\n");
+        trick.forEach(c -> result.append(cardValueToInteger(c)).append(" ").append(cardColorToString(c)).append("\n"));
+        result.append("Players: ").append("\n");
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
         return result.toString();
     }

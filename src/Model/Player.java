@@ -13,37 +13,49 @@ public class Player {
     private final int tricksWon;
     private final int score;
     private final boolean isHuman;
+
+    private final int playerNumber;
     private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
     private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
 
 
-    private Player(List<Byte> hand, int tricksCalled, int tricksWon, int score, boolean isHuman) {
+    private Player(List<Byte> hand, int tricksCalled, int tricksWon, int score, boolean isHuman, int playerNumber) {
         this.hand = hand;
         this.tricksCalled = tricksCalled;
         this.tricksWon = tricksWon;
         this.score = score;
         this.isHuman = isHuman;
-
+        this.playerNumber = playerNumber;
     }
-    public Player() {
-        this(List.of(), 0, 0, 0, true);
+    Player(int playerNumber) {
+        this(List.of(), 0, 0, 0, true, playerNumber);
     }
 
-    public Player addCard(byte card) {
+    Player addCard(byte card) {
         ArrayList<Byte> newHand = new ArrayList<>(hand);
         newHand.add(card);
-        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, isHuman);
+        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, isHuman, playerNumber);
     }
-    public Player removeCard(byte card) {
+    Player removeCard(byte card) {
         ArrayList<Byte> newHand = new ArrayList<>(hand);
         newHand.remove((Byte) card);
-        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, isHuman);
+        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, isHuman, playerNumber);
     }
-    public Player addWonTrick() {
-        return new Player(hand, tricksCalled, tricksWon+1, score, isHuman);
+    Player addWonTrick() {
+        return new Player(hand, tricksCalled, tricksWon+1, score, isHuman, playerNumber);
     }
-    public Player addToScore(int points) {
-        return new Player(hand, tricksCalled, tricksWon+1, score+points, isHuman);
+    Player addToScore(int points) {
+        return new Player(hand, tricksCalled, tricksWon+1, score+points, isHuman, playerNumber);
+    }
+    /**
+     * returns the hand of the player. It is a copy of the hand, so it cannot be modified.
+     * @return the hand of the player.
+     */
+    List<Byte> getHand() {
+        return List.copyOf(hand);
+    }
+    Player setTricksCalled(int tricksCalled) {
+        return new Player(hand, tricksCalled, tricksWon, score, isHuman, playerNumber);
     }
     public int getCalledTricks() {
         return tricksCalled;
@@ -51,16 +63,9 @@ public class Player {
     public int getWonTricks() {
         return tricksWon;
     }
-    /**
-     * returns the hand of the player. It is a copy of the hand, so it cannot be modified.
-     * @return the hand of the player.
-     */
-
-    public List<Byte> getHand() {
-        return List.copyOf(hand);
+    public int getScore() {
+        return score;
     }
-
-    // for testing purposes
     public byte getCard(int index) {
         return hand.get(index);
     }
@@ -68,7 +73,7 @@ public class Player {
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder("Player %d: ");
-        hand.forEach(card -> result.append((valueMask.apply(card) % 15)).append(" ").append(WizardModel.cardColorToString(card)).append("\n"));
+        hand.forEach(card -> result.append(WizardModel.cardValueToInteger(card)).append(" ").append(WizardModel.cardColorToString(card)).append("\n"));
         return result.toString();
     }
 }
