@@ -2,7 +2,6 @@ package Model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 public class Player {
     /**
@@ -13,11 +12,7 @@ public class Player {
     private final int tricksWon;
     private final int score;
     private final boolean isHuman;
-
     private final int playerNumber;
-    private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
-    private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
-
 
     private Player(List<Byte> hand, int tricksCalled, int tricksWon, int score, boolean isHuman, int playerNumber) {
         this.hand = hand;
@@ -70,10 +65,13 @@ public class Player {
         return hand.get(index);
     }
 
+
+    /*
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder("Player %d: ");
-        hand.forEach(card -> result.append(WizardModel.cardValueToInteger(card)).append(" ").append(WizardModel.cardColorToString(card)).append("\n"));
+        hand.forEach(card -> result.append(WizardModel.cardToString(card)).append("\n"));
         return result.toString();
     }
+    */
 }

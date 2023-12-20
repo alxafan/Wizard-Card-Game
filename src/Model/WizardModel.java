@@ -31,8 +31,8 @@ public class WizardModel implements IWizardModel{
     // Stores the trump-card, only the color is necessary, but a byte is not expensive memory-wise
     private final byte trump;
     // Lambda-Expressions to apply according byte-masks
-    private static final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
-    private static final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
+    private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
+    private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
     // Card value 14, no need for a fool version, because it's equal to 0
     private final byte wizard = 0b00001110;
     private final byte fool = 0b00000000;
@@ -48,9 +48,15 @@ public class WizardModel implements IWizardModel{
         this(List.of(), List.of(), 0, 0, (byte) 0);
     }
 
+    @Override
+    public WizardModel newGame() {
+        return new WizardModel();
+    }
+
     /**
      * Method that deals out cards to the players.
      */
+    @Override
     public WizardModel dealCards() {
         ArrayList<Byte> deck = new ArrayList<>(List.of((byte) 0,(byte) 1,(byte) 2,(byte) 3,(byte) 4,(byte) 5,(byte) 6,(byte) 7,(byte) 8,(byte) 9,(byte) 10,(byte) 11,(byte) 12,(byte) 13,(byte) 14,(byte) 64,(byte) 65,(byte) 66,(byte) 67,(byte) 68,(byte) 69,(byte) 70,(byte) 71,(byte) 72,(byte) 73,(byte) 74,(byte) 75,(byte) 76,(byte) 77,(byte) 78,(byte) 128,(byte) 129,(byte) 130,(byte) 131,(byte) 132,(byte) 133,(byte) 134,(byte) 135,(byte) 136,(byte) 137,(byte) 138,(byte) 139,(byte) 140,(byte) 141,(byte) 142,(byte) 192,(byte) 193,(byte) 194,(byte) 195,(byte) 196,(byte) 197,(byte) 198,(byte) 199,(byte) 200,(byte) 201,(byte) 202,(byte) 203,(byte) 204,(byte) 205,(byte) 206));
         List<Player> p = new ArrayList<>(players);
@@ -58,18 +64,13 @@ public class WizardModel implements IWizardModel{
             p.replaceAll(player -> player.addCard(deck.remove((int) (Math.random()*deck.size()))));
         }
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, deck.remove((int) (Math.random()*deck.size())));
-        /* Function used to generate all the cards in the list
-        for (int i = 0, j = -1; i < 60; i++) {
-            if (i%15 == 0) j++;
-            System.out.print("(byte) " + ((j<<6)+(i%15)) + ",");
-        }
-         */
     }
 
     /**
      * Method which plays a card into the trick, while making sure that no wizard rules are broken. Keep in mind that this only works if the controller makes sure that the player who's turn it is plays
      * @param card the card to be played
      */
+    @Override
     public WizardModel playCard(byte card) {
 
         boolean wizardPlayedFirst = (!trick.isEmpty() && trick.stream().filter(c -> valueMask.apply(c) != (byte) 0).findFirst().orElse((byte) 15).equals(wizard));
@@ -112,8 +113,8 @@ public class WizardModel implements IWizardModel{
         t.add(card);
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump);
     }
-
     // Only works during the current trick, can't undo a round
+    @Override
     public WizardModel undoPlayCard() {
         if (trick.isEmpty()) {
             System.out.println("No cards have been played yet.");
@@ -124,7 +125,7 @@ public class WizardModel implements IWizardModel{
         p = replaceAtIndex(p,trick.size()-1, p.get(trick.size()-1).addCard(t.remove(t.size()-1)));
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump);
     }
-
+    @Override
     public WizardModel endTrick() {
         if (!isTrickOver()) {
             System.out.println("Not all players have played a card yet.");
@@ -196,6 +197,12 @@ public class WizardModel implements IWizardModel{
     public Player getPlayer(int index) {
         return players.get(index);
     }
+    public int getCurrentPlayerNum() {
+        return trick.size()+startingPlayer%players.size();
+    }
+    public List<Byte> getCurrentPlayerHand() {
+        return players.get(trick.size()).getHand();
+    }
 
     // function to replace an element in a list at a given index, only way to keep the list immutable
     private <T> List<T> replaceAtIndex(List<T> list, int index, T element) {
@@ -204,9 +211,8 @@ public class WizardModel implements IWizardModel{
         return List.copyOf(l);
     }
 
-    // static method to extract the color of a card
-    static String cardColorToString(byte card) {
-        return switch (colorMask.apply(card)) {
+    String cardToString(byte card) {
+        return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
             case (byte) 0b00000000 -> "Red";
             case (byte) 0b01000000 -> "Green";
             case (byte) 0b10000000 -> "Blue";
@@ -215,18 +221,14 @@ public class WizardModel implements IWizardModel{
         };
     }
 
-    static int cardValueToInteger(byte card) {
-        return valueMask.apply(card)%15;
-    }
-
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
         result.append("Round: ").append(round).append("\n");
-        result.append("Trump: ").append(cardColorToString(trump)).append("\n");
-        result.append("Trick: ").append("\n");
-        trick.forEach(c -> result.append(cardValueToInteger(c)).append(" ").append(cardColorToString(c)).append("\n"));
-        result.append("Players: ").append("\n");
+        result.append("Trump card: ").append(cardToString(trump)).append("\n");
+        result.append("Cards in trick: ").append("\n");
+        trick.forEach(c -> result.append(cardToString(c)).append("\n"));
+        result.append("Players hands: ").append("\n");
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
         return result.toString();
     }

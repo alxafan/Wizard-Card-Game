@@ -1,6 +1,8 @@
 package Model;
 
 public interface IWizardModel {
+    public IWizardModel newGame();
+    public IWizardModel dealCards();
     public IWizardModel playCard(byte card);
     public IWizardModel undoPlayCard();
     public IWizardModel endTrick();
@@ -9,6 +11,6 @@ public interface IWizardModel {
     public boolean isGameOver();
     public boolean isTrickOver();
     public boolean isRoundOver();
-    public Player getPlayer(int index);
+    public int getCurrentPlayerNum();
     public IWizardModel addPlayer();
 }
