@@ -2,6 +2,7 @@ package Controller;
 
 public enum GameState {
     START,
-    PLAYING,
+    CALLING_TRICKS,
+    PLAYING_TRICK,
     GAME_OVER
 }

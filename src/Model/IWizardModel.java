@@ -3,16 +3,22 @@ package Model;
 import java.util.List;
 
 public interface IWizardModel {
-    public IWizardModel newGame();
-    public IWizardModel dealCards();
-    public IWizardModel playCard(byte card);
-    public IWizardModel undoPlayCard();
-    public IWizardModel endTrick();
-    public IWizardModel endRound();
-    public IWizardModel setTricksCalled(int playerNumber, int tricksCalled);
-    public boolean isGameOver();
-    public boolean isTrickOver();
-    public boolean isRoundOver();
-    public List<Player> getPlayers();
-    public IWizardModel addPlayer();
+    IWizardModel newGame();
+    IWizardModel dealCards();
+    IWizardModel addPlayer();
+    IWizardModel setTricksCalled(int tricksCalled);
+    IWizardModel playCard(byte card);
+    IWizardModel undoPlayCard();
+    IWizardModel endTrick();
+    IWizardModel endRound();
+    boolean isGameOver();
+    boolean isTrickOver();
+    boolean isRoundOver();
+    List<Player> getPlayers();
+    List<Byte> getTrick();
+    int getCurrentPlayerNum();
+    byte getTrump();
+    int getRound();
+
+
 }

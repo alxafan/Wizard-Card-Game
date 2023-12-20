@@ -20,13 +20,28 @@ public class WizardController implements IWizardController{
         this.view = view;
     }
 
+    /**
+     * Allows the server/ client to add a player to the game
+     * @return the index of the added player or -1 if adding a player failed
+     */
+    public int addPlayer() {
+        if (gameState == GameState.START && model.getPlayers().size() <= 6) {
+            model = model.addPlayer();
+            return model.getPlayers().size();
+        }
+        return -1;
+    }
+
     @Override
     public void nextFrame() {
         switch (gameState) {
             case START:
                 view.drawStartScreen();
                 break;
-            case PLAYING:
+            case CALLING_TRICKS:
+                // TODO: view.drawCallingTricksScreen();
+                break;
+            case PLAYING_TRICK:
                 if (model.isGameOver()) gameState = GameState.GAME_OVER;
                 if (model.isTrickOver()) model = model.endTrick();
                 if (model.isRoundOver()) {
@@ -34,7 +49,7 @@ public class WizardController implements IWizardController{
                     if (model.isGameOver()) gameState = GameState.GAME_OVER;
                     else model = model.dealCards();
                 }
-
+                view.drawPlayingScreen(model.getPlayers(), model.getTrick(), model.getTrump(), model.getRound(), model.getCurrentPlayerNum());
                 break;
             case GAME_OVER:
                 view.drawEndScreen();
@@ -48,10 +63,21 @@ public class WizardController implements IWizardController{
     public void handleInput(int cardIndex) {
         switch (gameState) {
             case START:
-                if (cardIndex == -2) gameState = GameState.PLAYING;
+                if (cardIndex == -2) {
+                    // Adding Players for testing
+                    addPlayer();
+                    addPlayer();
+                    addPlayer();
+                    model = model.dealCards();
+                    gameState = GameState.PLAYING_TRICK;
+                }
                 break;
-            case PLAYING:
-                // TODO: model = model.playCard();
+            case CALLING_TRICKS:
+                // TODO: model = model.setTricksCalled(cardIndex);
+                break;
+            case PLAYING_TRICK:
+                // has to be reworked
+                model = model.playCard(model.getPlayers().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
                 break;
             case GAME_OVER:
                 model = model.newGame();
