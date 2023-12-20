@@ -1,5 +1,7 @@
 package Model;
 
+import java.util.List;
+
 public interface IWizardModel {
     public IWizardModel newGame();
     public IWizardModel dealCards();
@@ -11,6 +13,6 @@ public interface IWizardModel {
     public boolean isGameOver();
     public boolean isTrickOver();
     public boolean isRoundOver();
-    public int getCurrentPlayerNum();
+    public List<Player> getPlayers();
     public IWizardModel addPlayer();
 }

@@ -86,7 +86,7 @@ public class WizardModel implements IWizardModel{
 
         // also prevents players whose turn it is not from playing a card, as all cards only occur once and only the current player has the playable cards this trick
         // also allows for only valid cards to be played, as only valid cards are dealt out
-        if (!players.get(trick.size()).getHand().contains(card)) {
+        if (!players.get(trick.size()).hand().contains(card)) {
             System.out.println("Player " + trick.size() + " does not have the card he is trying to play.");
             return this;
         }
@@ -97,7 +97,7 @@ public class WizardModel implements IWizardModel{
                 firstNonFoolCard != fool &&
                 !colorMask.apply(firstNonFoolCard).equals(colorMask.apply(card)) &&
                 // Move this to the controller?
-                players.get(trick.size()).getHand().stream().anyMatch(c -> colorMask.apply(c).equals(colorMask.apply(firstNonFoolCard))) // this part is necessary, because it is possible that a player does not have a matching color on his hand
+                players.get(trick.size()).hand().stream().anyMatch(c -> colorMask.apply(c).equals(colorMask.apply(firstNonFoolCard))) // this part is necessary, because it is possible that a player does not have a matching color on his hand
         ) {
             System.out.println("Player " + trick.size() + " must play a card of the same color as the first card played this trick.");
             return this;
@@ -153,6 +153,7 @@ public class WizardModel implements IWizardModel{
         System.out.println("Player " + winner + " won the trick.");
 
         p = replaceAtIndex(p,winner,p.get(winner).addWonTrick());
+        // clears the trick by creating a new empty list
         return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0);
     }
 
@@ -162,7 +163,7 @@ public class WizardModel implements IWizardModel{
             return this;
         }
         List<Player> p = new ArrayList<>(players);
-        p.replaceAll(player -> player.addToScore(player.getCalledTricks()-player.getWonTricks() == 0 ? 20+player.getWonTricks()*10 : -Math.abs(player.getCalledTricks()-player.getWonTricks())*10));
+        p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10));
         return new WizardModel(List.copyOf(p), new ArrayList<Byte>(6), round+1, round+1, (byte) 0);
     }
 
@@ -177,11 +178,11 @@ public class WizardModel implements IWizardModel{
 
     @Override
     public boolean isRoundOver() {
-        return players.stream().allMatch(player -> player.getHand().isEmpty()) && trick.isEmpty();
+        return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();
     }
 
     public WizardModel addPlayer() {
-        Player player = new Player(players.size());
+        Player player = new Player();
         List<Player> p = new ArrayList<>(players);
         p.add(player);
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump);
@@ -197,11 +198,9 @@ public class WizardModel implements IWizardModel{
     public Player getPlayer(int index) {
         return players.get(index);
     }
-    public int getCurrentPlayerNum() {
-        return trick.size()+startingPlayer%players.size();
-    }
-    public List<Byte> getCurrentPlayerHand() {
-        return players.get(trick.size()).getHand();
+
+    public List<Player> getPlayers() {
+        return players;
     }
 
     // function to replace an element in a list at a given index, only way to keep the list immutable
