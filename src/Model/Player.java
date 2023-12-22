@@ -25,19 +25,18 @@ public record Player(
         newHand.remove((Byte) card);
         return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, isHuman);
     }
-    public Player addWonTrick() {
-        return new Player(hand, tricksCalled, tricksWon + 1, score, isHuman);
+    public Player setTricksWon(int amount) {
+        return new Player(hand, tricksCalled, amount, score, isHuman);
     }
     public Player addToScore(int points) {
         return new Player(hand, tricksCalled, tricksWon, score + points, isHuman);
     }
-    public Player setTricksCalled(int tricksCalled) {
-        return new Player(hand, tricksCalled, tricksWon, score, isHuman);
+    public Player setTricksCalled(int amount) {
+        return new Player(hand, amount, tricksWon, score, isHuman);
     }
 
 
     // Testing, remove later
-
     private static final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
     private static final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
     @Override
@@ -48,7 +47,7 @@ public record Player(
         result.append("Tricks won: ").append(tricksWon).append("\n");
         return result.toString();
     }
-    String cardToString(byte card) {
+    private String cardToString(byte card) {
         return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
             case (byte) 0b00000000 -> "Red";
             case (byte) 0b01000000 -> "Green";

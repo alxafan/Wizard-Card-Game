@@ -107,8 +107,11 @@ public class WizardModel implements IWizardModel{
         List<Byte> t = new ArrayList<>(trick);
 
         p = replaceAtIndex(p,currentPlayer,p.get(currentPlayer).removeCard(card));
-        if (colorMask.apply(card).equals(colorMask.apply(firstNonFoolCard))) card |= 0b00010000;
-        if (colorMask.apply(card).equals(colorMask.apply(trump))) card |= 0b00100000;
+        // Do this when evaluating the trick???
+        if (valueMask.apply(card) != wizard && valueMask.apply(card) != fool){
+            if (colorMask.apply(card).equals(colorMask.apply(firstNonFoolCard))) card |= 0b00010000;
+            if (colorMask.apply(card).equals(colorMask.apply(trump))) card |= 0b00100000;
+        }
         t.add(card);
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled);
     }
@@ -151,7 +154,7 @@ public class WizardModel implements IWizardModel{
         // Testing purposes
         System.out.println("Player " + winner + " won the trick.");
 
-        p = replaceAtIndex(p,winner,p.get(winner).addWonTrick());
+        p = replaceAtIndex(p,winner,p.get(winner).setTricksWon(p.get(winner).tricksWon()+1));
         // clears the trick by creating a new empty list
         return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0, totalTricksCalled);
     }
@@ -162,8 +165,18 @@ public class WizardModel implements IWizardModel{
             return this;
         }
         List<Player> p = new ArrayList<>(players);
-        p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10));
+        p.replaceAll(player -> player
+                .addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10)
+                .setTricksCalled(0)
+                .setTricksWon(0));
         return new WizardModel(List.copyOf(p), List.of(), round+1, round+1, (byte) 0, totalTricksCalled);
+    }
+    @Override
+    public WizardModel addPlayer() {
+        Player player = new Player();
+        List<Player> p = new ArrayList<>(players);
+        p.add(player);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled);
     }
     @Override
     public boolean isGameOver() {
@@ -176,13 +189,6 @@ public class WizardModel implements IWizardModel{
     @Override
     public boolean isRoundOver() {
         return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();
-    }
-    @Override
-    public WizardModel addPlayer() {
-        Player player = new Player();
-        List<Player> p = new ArrayList<>(players);
-        p.add(player);
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled);
     }
     @Override
     public WizardModel setTricksCalled(int tricksCalled) {
@@ -220,22 +226,13 @@ public class WizardModel implements IWizardModel{
     public int getRound() {
         return round;
     }
-
-
-
-    // for testing purposes
-    public Player getPlayer(int index) {
-        return players.get(index);
-    }
-
     // function to replace an element in a list at a given index, only way to keep the list immutable
     private <T> List<T> replaceAtIndex(List<T> list, int index, T element) {
         List<T> l = new ArrayList<>(list);
         l.set(index, element);
         return List.copyOf(l);
     }
-
-    String cardToString(byte card) {
+    private String cardToString(byte card) {
         return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
             case (byte) 0b00000000 -> "Red";
             case (byte) 0b01000000 -> "Green";
@@ -245,16 +242,21 @@ public class WizardModel implements IWizardModel{
         };
     }
 
+    // for testing purposes
+    public Player getPlayer(int index) {
+        return players.get(index);
+    }
+
     // TODO: fix toString methods here and in Player, Cards change VALUE due to value flags being set
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
-        result.append("Round: ").append(round).append("\n");
-        result.append("Trump card: ").append(cardToString(trump)).append("\n");
-        result.append("Cards in trick: ").append("\n");
+        result.append("Round: ").append(round).append("\n")
+                .append("Trump card: ").append(cardToString(trump)).append("\n")
+                .append("Cards in trick: ").append("\n");
         trick.forEach(c -> result.append(cardToString(c)).append("\n"));
-        result.append("\n");
-        result.append("Players hands: ").append("\n");
+        result.append("\n")
+                .append("Players hands: ").append("\n");
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
         return result.toString();
     }

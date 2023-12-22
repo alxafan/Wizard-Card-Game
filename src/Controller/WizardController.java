@@ -3,10 +3,15 @@ package Controller;
 import Model.IWizardModel;
 import View.IWizardView;
 
+import java.util.ArrayList;
+
 public class WizardController implements IWizardController{
     GameState gameState;
     IWizardModel model;
     IWizardView view;
+
+    // ?
+    ArrayList<IWizardModel> modelHistory = new ArrayList<>();
 
     public WizardController() {
         this.gameState = GameState.START;
@@ -77,7 +82,11 @@ public class WizardController implements IWizardController{
                 break;
             case PLAYING_TRICK:
                 // has to be reworked
-                model = model.playCard(model.getPlayers().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
+                if (cardIndex >= 0) {
+                    modelHistory.add(model);
+                    model = model.playCard(model.getPlayers().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
+                }
+                if (cardIndex == -3) model = modelHistory.remove(modelHistory.size() - 1);
                 break;
             case GAME_OVER:
                 model = model.newGame();

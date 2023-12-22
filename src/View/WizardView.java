@@ -40,14 +40,14 @@ public class WizardView extends PApplet implements IWizardView {
     }
 
     @Override
-    public void drawCallingTricksScreen(List<Player> players, byte trump, int currentPlayerNum) {
+    public void drawCallingTricksScreen(List<Player> players, int round, byte trump, int currentPlayerNum) {
 
     }
 
     @Override
     public void drawPlayingScreen(List<Player> players, List<Byte> trick, byte trump, int round, int currentPlayerNum) {
-        background(128);
-
+        background(0);
+        textSize(16);
         cardsInHand = players.get(currentPlayerNum).hand().size();
 
         StringBuilder result = new StringBuilder();
@@ -57,9 +57,9 @@ public class WizardView extends PApplet implements IWizardView {
         trick.forEach(c -> result.append(cardToString(c)).append("\n"));
         result.append("\n").append("Players hands: ").append("\n").append("\n");
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
-        text(result.toString(), 10, 10);
-        text(players.get(currentPlayerNum).toString(), 10, 400);
-        text("Selected card: " + cardToString(players.get(currentPlayerNum).hand().get(selectedCardIndex)), 10, 500);
+        text(result.toString(), 10, 20);
+        text(players.get(currentPlayerNum).toString(), 300, 20);
+        text("Selected card: " + cardToString(players.get(currentPlayerNum).hand().get(selectedCardIndex)), 10, 550);
     }
 
     @Override
@@ -69,10 +69,6 @@ public class WizardView extends PApplet implements IWizardView {
 
     @Override
     public void keyPressed(KeyEvent event) {
-        // Used for beginning the game
-        if(event.getKey() == ' ') {
-            controller.handleInput(-2);
-        }
         if(event.getKeyCode() == RIGHT) {
             selectedCardIndex = ++selectedCardIndex % cardsInHand;
         }
@@ -80,16 +76,26 @@ public class WizardView extends PApplet implements IWizardView {
             selectedCardIndex = Math.abs(--selectedCardIndex % cardsInHand);
         }
         if(event.getKeyCode() == ENTER) {
-            controller.handleInput(selectedCardIndex);
+            controller.handleInput(selectedCardIndex--);
+            selectedCardIndex = Math.max(selectedCardIndex, 0);
         }
         if (event.getKeyCode() == BACKSPACE) {
             controller.handleInput(-1);
+        }
+        // Used for beginning the game
+        if(event.getKey() == ' ') {
+            controller.handleInput(-2);
+        }
+        if (event.getKey() == 'r') {
+            controller.handleInput(-3);
         }
     }
 
 
     // REMOVE THIS WHEN DONE
-    private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
+
+    // valueMask modified to ignore flags
+    private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00001111);
     private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
     String cardToString(byte card) {
         return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
