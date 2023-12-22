@@ -7,7 +7,8 @@ import View.WizardView;
 public class Main {
     public static void main(String[] args) {
         var model = new WizardModel();
-        var controller = new WizardController();
+        // Change this to the player number assigned by the server
+        var controller = new WizardController(0);
         var view = new WizardView();
 
         // Connect M, V and C

@@ -4,39 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-public record Player(
-        List<Byte> hand,
-        int tricksCalled,
-        int tricksWon,
-        int score,
-        boolean isHuman
-
-) {
-    public Player() {
-        this(List.of(), 0, 0, 0, true);
-    }
+public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score, boolean hasCalledTrick) {
+    public Player() {this(List.of(), 0, 0, 0, true);}
     public Player addCard(byte card) {
         ArrayList<Byte> newHand = new ArrayList<>(hand);
         newHand.add(card);
-        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, isHuman);
+        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, hasCalledTrick);
     }
     public Player removeCard(byte card) {
         ArrayList<Byte> newHand = new ArrayList<>(hand);
         newHand.remove((Byte) card);
-        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, isHuman);
+        return new Player(List.copyOf(newHand), tricksCalled, tricksWon, score, hasCalledTrick);
     }
-    public Player setTricksWon(int amount) {
-        return new Player(hand, tricksCalled, amount, score, isHuman);
-    }
-    public Player addToScore(int points) {
-        return new Player(hand, tricksCalled, tricksWon, score + points, isHuman);
-    }
-    public Player setTricksCalled(int amount) {
-        return new Player(hand, amount, tricksWon, score, isHuman);
-    }
+    public Player setTricksWon(int amount) {return new Player(hand, tricksCalled, amount, score, hasCalledTrick);}
+    public Player addToScore(int points) {return new Player(hand, tricksCalled, tricksWon, score + points, hasCalledTrick);}
+    public Player setTricksCalled(int amount) {return new Player(hand, amount, tricksWon, score, hasCalledTrick);}
 
 
     // Testing, remove later
+
     private static final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
     private static final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
     @Override
@@ -56,4 +42,5 @@ public record Player(
             default -> "";
         };
     }
+
 }

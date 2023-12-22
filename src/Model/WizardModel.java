@@ -15,8 +15,7 @@ System.out.println(w = w.endRound());
 System.out.println(w = w.dealCards());
  */
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 public class WizardModel implements IWizardModel{
@@ -46,17 +45,13 @@ public class WizardModel implements IWizardModel{
         this.trump = trump;
         this.totalTricksCalled = totalTricksCalled;
     }
-    public WizardModel() {
-        this(List.of(), List.of(), 0, 0, (byte) 0, 0);
-    }
-    @Override
-    public WizardModel newGame() {
-        return new WizardModel();
-    }
+    public WizardModel() {this(List.of(), List.of(), 0, 0, (byte) 0, 0);}
+    
+    public WizardModel newGame() {return new WizardModel();}
     /**
      * Method that deals out cards to the players.
      */
-    @Override
+    
     public WizardModel dealCards() {
         ArrayList<Byte> deck = new ArrayList<>(List.of((byte) 0,(byte) 1,(byte) 2,(byte) 3,(byte) 4,(byte) 5,(byte) 6,(byte) 7,(byte) 8,(byte) 9,(byte) 10,(byte) 11,(byte) 12,(byte) 13,(byte) 14,(byte) 64,(byte) 65,(byte) 66,(byte) 67,(byte) 68,(byte) 69,(byte) 70,(byte) 71,(byte) 72,(byte) 73,(byte) 74,(byte) 75,(byte) 76,(byte) 77,(byte) 78,(byte) 128,(byte) 129,(byte) 130,(byte) 131,(byte) 132,(byte) 133,(byte) 134,(byte) 135,(byte) 136,(byte) 137,(byte) 138,(byte) 139,(byte) 140,(byte) 141,(byte) 142,(byte) 192,(byte) 193,(byte) 194,(byte) 195,(byte) 196,(byte) 197,(byte) 198,(byte) 199,(byte) 200,(byte) 201,(byte) 202,(byte) 203,(byte) 204,(byte) 205,(byte) 206));
         List<Player> p = new ArrayList<>(players);
@@ -69,14 +64,13 @@ public class WizardModel implements IWizardModel{
      * Method which plays a card into the trick, while making sure that no wizard rules are broken. Keep in mind that this only works if the controller makes sure that the player who's turn it is plays
      * @param card the card to be played
      */
-    @Override
+    
     public WizardModel playCard(byte card) {
         int currentPlayer = (startingPlayer + trick.size()) % players.size();
 
         boolean wizardPlayedFirst = (!trick.isEmpty() && trick.stream().filter(c -> valueMask.apply(c) != (byte) 0).findFirst().orElse((byte) 15).equals(wizard));
-
-        byte firstNonFoolCard = trick.stream().filter(c -> valueMask.apply(c) != (byte) 0).findFirst().orElse(card);
-
+        // makes sure that if only fools were played the other checks still work as intended
+        byte firstNonFoolCard = trick.stream().filter(c -> valueMask.apply(c) != fool).findFirst().orElse(card);
 
         if (trick.size() == players.size()) {
             System.out.println("All players have already played a card this trick.");
@@ -116,7 +110,7 @@ public class WizardModel implements IWizardModel{
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled);
     }
     // Only works during the current trick, can't undo a round
-    @Override
+    
     public WizardModel undoPlayCard() {
         if (trick.isEmpty()) {
             System.out.println("No cards have been played yet.");
@@ -127,7 +121,7 @@ public class WizardModel implements IWizardModel{
         p = replaceAtIndex(p,trick.size()-1, p.get(trick.size()-1).addCard(t.remove(t.size()-1)));
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled);
     }
-    @Override
+    
     public WizardModel endTrick() {
         if (!isTrickOver()) {
             System.out.println("Not all players have played a card yet.");
@@ -142,7 +136,8 @@ public class WizardModel implements IWizardModel{
                                             findFirst().
                                             orElse(trick.stream().
                                                             map(valueMask).
-                                                            reduce((byte) 0, (a, b) -> (a > b ? a : b)))
+                                                            reduce((byte) 0, (a, b) -> (a > b ? a : b))
+                                            )
         );
 
         for(int i = 0; i < trick.size(); i++) {
@@ -158,7 +153,7 @@ public class WizardModel implements IWizardModel{
         // clears the trick by creating a new empty list
         return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0, totalTricksCalled);
     }
-    @Override
+    
     public WizardModel endRound() {
         if (!isRoundOver()) {
             System.out.println("Not all players have played all their cards yet, or the trick still needs to be ended.");
@@ -171,26 +166,14 @@ public class WizardModel implements IWizardModel{
                 .setTricksWon(0));
         return new WizardModel(List.copyOf(p), List.of(), round+1, round+1, (byte) 0, totalTricksCalled);
     }
-    @Override
+    
     public WizardModel addPlayer() {
         Player player = new Player();
         List<Player> p = new ArrayList<>(players);
         p.add(player);
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled);
     }
-    @Override
-    public boolean isGameOver() {
-        return round == (60/players.size())+1;
-    }
-    @Override
-    public boolean isTrickOver() {
-        return trick.size() == players.size();
-    }
-    @Override
-    public boolean isRoundOver() {
-        return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();
-    }
-    @Override
+
     public WizardModel setTricksCalled(int tricksCalled) {
         int playerIndex = getCurrentPlayerNum();
         if (tricksCalled < 0 || playerIndex < 0 || playerIndex >= players.size()) {
@@ -206,26 +189,22 @@ public class WizardModel implements IWizardModel{
         p = replaceAtIndex(p,playerIndex, p.get(playerIndex).setTricksCalled(tricksCalled));
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled + tricksCalled);
     }
-    @Override
-    public List<Player> getPlayers() {
-        return players;
-    }
-    @Override
-    public List<Byte> getTrick() {
-        return trick;
-    }
-    @Override
-    public int getCurrentPlayerNum() {
-        return (trick.size()+startingPlayer)%players.size();
-    }
-    @Override
-    public byte getTrump() {
-        return trump;
-    }
-    @Override
-    public int getRound() {
-        return round;
-    }
+    
+    public boolean isGameOver() {return round == (60/players.size())+1;}
+    
+    public boolean isTrickOver() {return trick.size() == players.size();}
+    
+    public boolean isRoundOver() {return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();}
+    
+    public List<Player> getPlayers() {return players;}
+    
+    public List<Byte> getTrick() {return trick;}
+    
+    public int getCurrentPlayerNum() {return (trick.size()+startingPlayer)%players.size();}
+    
+    public byte getTrump() {return trump;}
+    
+    public int getRound() {return round;}
     // function to replace an element in a list at a given index, only way to keep the list immutable
     private <T> List<T> replaceAtIndex(List<T> list, int index, T element) {
         List<T> l = new ArrayList<>(list);
@@ -243,12 +222,10 @@ public class WizardModel implements IWizardModel{
     }
 
     // for testing purposes
-    public Player getPlayer(int index) {
-        return players.get(index);
-    }
+    public Player getPlayer(int index) {return players.get(index);}
 
     // TODO: fix toString methods here and in Player, Cards change VALUE due to value flags being set
-    @Override
+    
     public String toString() {
         StringBuilder result = new StringBuilder();
         result.append("Round: ").append(round).append("\n")

@@ -2,7 +2,6 @@ package View;
 
 import Controller.IWizardController;
 import processing.core.PApplet;
-import processing.core.PImage;
 import processing.event.KeyEvent;
 import Model.Player;
 
@@ -40,15 +39,18 @@ public class WizardView extends PApplet implements IWizardView {
     }
 
     @Override
-    public void drawCallingTricksScreen(List<Player> players, int round, byte trump, int currentPlayerNum) {
-
+    public void drawCallingTricksScreen(List<Player> players, int round, byte trump, int currentPlayerNum, int assignedPlayerNum) {
+        background(0);
+        // TODO: Text-field allowing the assigned player to enter an amount of tricks, when it's their turn. Display other people's tricks called
     }
 
     @Override
-    public void drawPlayingScreen(List<Player> players, List<Byte> trick, byte trump, int round, int currentPlayerNum) {
+    public void drawPlayingScreen(List<Player> players, List<Byte> trick, byte trump, int round, int currentPlayerNum, int assignedPlayerNum) {
         background(0);
         textSize(16);
         cardsInHand = players.get(currentPlayerNum).hand().size();
+
+        // Only show assigned player's hand later
 
         StringBuilder result = new StringBuilder();
         result.append("Round: ").append(round).append("\n");
@@ -58,7 +60,7 @@ public class WizardView extends PApplet implements IWizardView {
         result.append("\n").append("Players hands: ").append("\n").append("\n");
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
         text(result.toString(), 10, 20);
-        text(players.get(currentPlayerNum).toString(), 300, 20);
+        text(players.get(currentPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
         text("Selected card: " + cardToString(players.get(currentPlayerNum).hand().get(selectedCardIndex)), 10, 550);
     }
 
@@ -69,6 +71,8 @@ public class WizardView extends PApplet implements IWizardView {
 
     @Override
     public void keyPressed(KeyEvent event) {
+        // Use switch here
+
         if(event.getKeyCode() == RIGHT) {
             selectedCardIndex = ++selectedCardIndex % cardsInHand;
         }
@@ -76,18 +80,18 @@ public class WizardView extends PApplet implements IWizardView {
             selectedCardIndex = Math.abs(--selectedCardIndex % cardsInHand);
         }
         if(event.getKeyCode() == ENTER) {
-            controller.handleInput(selectedCardIndex--);
+            controller.cardInput(selectedCardIndex--);
             selectedCardIndex = Math.max(selectedCardIndex, 0);
-        }
-        if (event.getKeyCode() == BACKSPACE) {
-            controller.handleInput(-1);
         }
         // Used for beginning the game
         if(event.getKey() == ' ') {
-            controller.handleInput(-2);
+            controller.functionInput(0);
+        }
+        if (event.getKeyCode() == BACKSPACE) {
+            controller.functionInput(1);
         }
         if (event.getKey() == 'r') {
-            controller.handleInput(-3);
+            controller.functionInput(2);
         }
     }
 

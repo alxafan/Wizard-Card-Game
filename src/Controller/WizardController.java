@@ -4,6 +4,7 @@ import Model.IWizardModel;
 import View.IWizardView;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class WizardController implements IWizardController{
     GameState gameState;
@@ -12,9 +13,11 @@ public class WizardController implements IWizardController{
 
     // ?
     ArrayList<IWizardModel> modelHistory = new ArrayList<>();
+    int assignedPlayerNum;
 
-    public WizardController() {
+    public WizardController(int playerNum) {
         this.gameState = GameState.START;
+        this.assignedPlayerNum = playerNum;
     }
 
     public void setModel(IWizardModel model) {
@@ -44,7 +47,7 @@ public class WizardController implements IWizardController{
                 view.drawStartScreen();
                 break;
             case CALLING_TRICKS:
-                // TODO: view.drawCallingTricksScreen();
+                view.drawCallingTricksScreen(model.getPlayers(), model.getRound(), model.getTrump(), model.getCurrentPlayerNum(), assignedPlayerNum);
                 break;
             case PLAYING_TRICK:
                 if (model.isGameOver()) gameState = GameState.GAME_OVER;
@@ -54,7 +57,7 @@ public class WizardController implements IWizardController{
                     if (model.isGameOver()) gameState = GameState.GAME_OVER;
                     else model = model.dealCards();
                 }
-                view.drawPlayingScreen(model.getPlayers(), model.getTrick(), model.getTrump(), model.getRound(), model.getCurrentPlayerNum());
+                view.drawPlayingScreen(model.getPlayers(), model.getTrick(), model.getTrump(), model.getRound(), model.getCurrentPlayerNum(), assignedPlayerNum);
                 break;
             case GAME_OVER:
                 view.drawEndScreen();
@@ -65,11 +68,19 @@ public class WizardController implements IWizardController{
     }
 
     @Override
-    public void handleInput(int cardIndex) {
-        switch (gameState) {
-            case START:
-                if (cardIndex == -2) {
-                    // Adding Players for testing
+    public void cardInput(int cardIndex) {
+        if (Objects.requireNonNull(gameState) == GameState.PLAYING_TRICK) {// use this later with and give feedback (view method) cardIndex >= 0 && assignedPlayerNum == model.getCurrentPlayerNum()
+            if (cardIndex >= 0) {
+                modelHistory.add(model);
+                model = model.playCard(model.getPlayers().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
+            }
+        }
+    }
+    @Override
+    public void functionInput(int functionNum) {
+        switch (functionNum) {
+            case 0: {
+                if (gameState == GameState.START) {
                     addPlayer();
                     addPlayer();
                     addPlayer();
@@ -77,22 +88,21 @@ public class WizardController implements IWizardController{
                     gameState = GameState.PLAYING_TRICK;
                 }
                 break;
-            case CALLING_TRICKS:
-                // TODO: model = model.setTricksCalled(cardIndex);
-                break;
-            case PLAYING_TRICK:
-                // has to be reworked
-                if (cardIndex >= 0) {
-                    modelHistory.add(model);
-                    model = model.playCard(model.getPlayers().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
+            }
+            case 1:
+                if(gameState == GameState.GAME_OVER) {
+                    model = model.newGame();
                 }
-                if (cardIndex == -3) model = modelHistory.remove(modelHistory.size() - 1);
                 break;
-            case GAME_OVER:
-                model = model.newGame();
-                break;
-            default:
+            case 2:
+                if (gameState == GameState.PLAYING_TRICK)
+                    model = modelHistory.remove(modelHistory.size() - 1);
                 break;
         }
+    }
+
+    @Override
+    public void setTrickAmount(int amount) {
+        
     }
 }

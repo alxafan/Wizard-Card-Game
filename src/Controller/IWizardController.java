@@ -3,5 +3,8 @@ package Controller;
 public interface IWizardController {
     void nextFrame();
     // separate method for handling input (cards vs actions)
-    void handleInput(int cardIndex);
+    void cardInput(int cardIndex);
+    void functionInput(int functionNum);
+    void setTrickAmount(int amount);
+
 }
