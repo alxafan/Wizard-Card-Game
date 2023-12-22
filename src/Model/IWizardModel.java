@@ -8,17 +8,16 @@ public interface IWizardModel {
     IWizardModel addPlayer();
     IWizardModel setTricksCalled(int tricksCalled);
     IWizardModel playCard(byte card);
-    IWizardModel undoPlayCard();
+//    IWizardModel undoPlayCard();
     IWizardModel endTrick();
     IWizardModel endRound();
     boolean isGameOver();
     boolean isTrickOver();
     boolean isRoundOver();
-    List<Player> getPlayers();
-    List<Byte> getTrick();
+    List<Player> players();
+    List<Byte> trick();
+    byte trump();
     int getCurrentPlayerNum();
-    byte getTrump();
-    int getRound();
-
+    int round();
 
 }

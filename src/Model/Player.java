@@ -20,27 +20,14 @@ public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score
     public Player addToScore(int points) {return new Player(hand, tricksCalled, tricksWon, score + points, hasCalledTrick);}
     public Player setTricksCalled(int amount) {return new Player(hand, amount, tricksWon, score, hasCalledTrick);}
 
-
-    // Testing, remove later
-
-    private static final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
-    private static final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
+    // toString for Testing
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder("Player %d: \n");
-        hand.forEach(card -> result.append(cardToString(card)).append("\n"));
+        hand.forEach(card -> result.append(WizardModel.cardToString(card)).append("\n"));
         result.append("Tricks called: ").append(tricksCalled).append("\n");
         result.append("Tricks won: ").append(tricksWon).append("\n");
         return result.toString();
-    }
-    private String cardToString(byte card) {
-        return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
-            case (byte) 0b00000000 -> "Red";
-            case (byte) 0b01000000 -> "Green";
-            case (byte) 0b10000000 -> "Blue";
-            case (byte) 0b11000000 -> "Yellow";
-            default -> "";
-        };
     }
 
 }

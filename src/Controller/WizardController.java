@@ -11,7 +11,7 @@ public class WizardController implements IWizardController{
     IWizardModel model;
     IWizardView view;
 
-    // ?
+    // Move to model
     ArrayList<IWizardModel> modelHistory = new ArrayList<>();
     int assignedPlayerNum;
 
@@ -33,9 +33,9 @@ public class WizardController implements IWizardController{
      * @return the index of the added player or -1 if adding a player failed
      */
     public int addPlayer() {
-        if (gameState == GameState.START && model.getPlayers().size() <= 6) {
+        if (gameState == GameState.START && model.players().size() <= 6) {
             model = model.addPlayer();
-            return model.getPlayers().size();
+            return model.players().size();
         }
         return -1;
     }
@@ -47,7 +47,7 @@ public class WizardController implements IWizardController{
                 view.drawStartScreen();
                 break;
             case CALLING_TRICKS:
-                view.drawCallingTricksScreen(model.getPlayers(), model.getRound(), model.getTrump(), model.getCurrentPlayerNum(), assignedPlayerNum);
+                view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentPlayerNum(), assignedPlayerNum);
                 break;
             case PLAYING_TRICK:
                 if (model.isGameOver()) gameState = GameState.GAME_OVER;
@@ -57,7 +57,7 @@ public class WizardController implements IWizardController{
                     if (model.isGameOver()) gameState = GameState.GAME_OVER;
                     else model = model.dealCards();
                 }
-                view.drawPlayingScreen(model.getPlayers(), model.getTrick(), model.getTrump(), model.getRound(), model.getCurrentPlayerNum(), assignedPlayerNum);
+                view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), assignedPlayerNum);
                 break;
             case GAME_OVER:
                 view.drawEndScreen();
@@ -72,7 +72,7 @@ public class WizardController implements IWizardController{
         if (Objects.requireNonNull(gameState) == GameState.PLAYING_TRICK) {// use this later with and give feedback (view method) cardIndex >= 0 && assignedPlayerNum == model.getCurrentPlayerNum()
             if (cardIndex >= 0) {
                 modelHistory.add(model);
-                model = model.playCard(model.getPlayers().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
+                model = model.playCard(model.players().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
             }
         }
     }
