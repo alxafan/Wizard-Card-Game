@@ -4,7 +4,6 @@ import Model.IWizardModel;
 import View.IWizardView;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
 public class WizardController implements IWizardController{
     GameState gameState;
@@ -47,15 +46,24 @@ public class WizardController implements IWizardController{
                 view.drawStartScreen();
                 break;
             case CALLING_TRICKS:
+                if (model.allPlayersCalledTricks()) gameState = GameState.PLAYING_TRICK;
                 view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentPlayerNum(), assignedPlayerNum);
                 break;
             case PLAYING_TRICK:
                 if (model.isGameOver()) gameState = GameState.GAME_OVER;
-                if (model.isTrickOver()) model = model.endTrick();
+                if (model.isTrickOver()) {
+                    model = model.endTrick();
+                    gameState = GameState.CALLING_TRICKS;
+                    view.displayText("Player " + model.winner() + " won this trick.");
+                }
                 if (model.isRoundOver()) {
                     model = model.endRound();
                     if (model.isGameOver()) gameState = GameState.GAME_OVER;
-                    else model = model.dealCards();
+                    else {
+                        model = model.dealCards();
+                        gameState = GameState.CALLING_TRICKS;
+                        // TODO: Display the scores being updated, maybe store the points before model.endRound()?
+                    }
                 }
                 view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), assignedPlayerNum);
                 break;
@@ -69,11 +77,26 @@ public class WizardController implements IWizardController{
 
     @Override
     public void cardInput(int cardIndex) {
-        if (Objects.requireNonNull(gameState) == GameState.PLAYING_TRICK) {// use this later with and give feedback (view method) cardIndex >= 0 && assignedPlayerNum == model.getCurrentPlayerNum()
-            if (cardIndex >= 0) {
+        if (gameState != GameState.PLAYING_TRICK) return; // use this later with and give feedback (view method) cardIndex >= 0 && assignedPlayerNum == model.getCurrentPlayerNum()
+        byte card = model.players().get(model.getCurrentPlayerNum()).hand().get(cardIndex);
+
+        switch (model.isLegalMove(card)) {
+            case 0:
                 modelHistory.add(model);
-                model = model.playCard(model.players().get(model.getCurrentPlayerNum()).hand().get(cardIndex));
-            }
+                model = model.playCard(card);
+                view.displayText("");
+                break;
+            case 1:
+                view.displayText("All players have already played a card this trick.");
+                break;
+            case 2:
+                view.displayText("Player " + model.getCurrentPlayerNum() + " does not have the card he is trying to play.");
+                break;
+            case 3:
+                view.displayText("Player " + model.getCurrentPlayerNum() + " must play a card of the same color as the first card played this trick.");
+                break;
+            default:
+                throw new IllegalStateException("Unexpected error-value: " + model.isLegalMove(card));
         }
     }
     @Override
@@ -85,7 +108,7 @@ public class WizardController implements IWizardController{
                     addPlayer();
                     addPlayer();
                     model = model.dealCards();
-                    gameState = GameState.PLAYING_TRICK;
+                    gameState = GameState.CALLING_TRICKS;
                 }
                 break;
             }
@@ -95,14 +118,38 @@ public class WizardController implements IWizardController{
                 }
                 break;
             case 2:
-                if (gameState == GameState.PLAYING_TRICK)
+                if (gameState == GameState.PLAYING_TRICK) {
+                    if (model.trick().isEmpty()) gameState = GameState.CALLING_TRICKS;
                     model = modelHistory.remove(modelHistory.size() - 1);
+                }
                 break;
         }
     }
 
     @Override
     public void setTrickAmount(int amount) {
-        
+        switch (model.isLegalTrickCall(amount, assignedPlayerNum)) {
+            case 0:
+                model = model.setTricksCalled(amount, assignedPlayerNum);
+                assignedPlayerNum++;
+                break;
+            case 1:
+                view.displayText("All players have called their tricks");
+                break;
+            case 2:
+                view.displayText("Not currently this players turn to call a trick");
+                break;
+            case 3:
+                view.displayText("Player index out of bounds.");
+                break;
+            case 4:
+                view.displayText("Can't call a negative amount of tricks or more tricks than there are in the round.");
+                break;
+            case 5:
+                view.displayText("Total amount of tricks can't be equal to the round number.");
+                break;
+            default:
+                throw new IllegalStateException("Unexpected error-value: " + model.isLegalTrickCall(amount, assignedPlayerNum));
+        }
     }
 }

@@ -1,6 +1,7 @@
 package View;
 
 import Controller.IWizardController;
+import controlP5.*;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
 import Model.Player;
@@ -8,10 +9,17 @@ import Model.Player;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+import static controlP5.ControlP5Constants.ACTION_RELEASE;
+
 public class WizardView extends PApplet implements IWizardView {
-    IWizardController controller;
-    int selectedCardIndex = 0;
-    int cardsInHand = 0;
+    private IWizardController controller;
+    private int selectedCardIndex = 0;
+    private int cardsInHand = 0;
+    private String message = "";
+
+    private ControlP5 cp5;
+    private Textfield tricksCallField;
+    private Button enterTricksCalled;
 
     public void setController(IWizardController controller) {
         this.controller = controller;
@@ -24,7 +32,28 @@ public class WizardView extends PApplet implements IWizardView {
 
     @Override
     public void setup() {
+        cp5 = new ControlP5(this);
 
+        tricksCallField = cp5.addTextfield("Amount");
+        tricksCallField.setLabel("")
+                .setPosition(150, 30)
+                .setSize(40, 18)
+                .setText("0");
+
+
+        enterTricksCalled = cp5.addButton("Enter");
+        enterTricksCalled.setPosition(200, 30)
+                .setSize(25, 18);
+
+        enterTricksCalled.addListenerFor(ACTION_RELEASE, c -> {
+            try {
+                controller.setTrickAmount(Integer.parseUnsignedInt(tricksCallField.getText()));
+                tricksCallField.setText("0");
+            } catch (NumberFormatException e){
+                displayText("Input Number is invalid, check for spaces in your input and don't leave the input empty");
+            }
+        }
+        );
     }
 
     @Override
@@ -41,7 +70,13 @@ public class WizardView extends PApplet implements IWizardView {
     @Override
     public void drawCallingTricksScreen(List<Player> players, int round, byte trump, int currentPlayerNum, int assignedPlayerNum) {
         background(0);
-        // TODO: Text-field allowing the assigned player to enter an amount of tricks, when it's their turn. Display other people's tricks called
+        StringBuilder result = new StringBuilder();
+        result.append("Round: ").append(round).append("\n");
+        result.append("Trump card: ").append(cardToString(trump)).append("\n");
+        text(result.toString(), 10, 20);
+        text(players.get(currentPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
+        text(message, 150, 500);
+
     }
 
     @Override
@@ -59,9 +94,15 @@ public class WizardView extends PApplet implements IWizardView {
         trick.forEach(c -> result.append(cardToString(c)).append("\n"));
         result.append("\n").append("Players hands: ").append("\n").append("\n");
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
-        text(result.toString(), 10, 20);
+
         text(players.get(currentPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
         text("Selected card: " + cardToString(players.get(currentPlayerNum).hand().get(selectedCardIndex)), 10, 550);
+        text(message, 150, 500);
+    }
+
+    @Override
+    public void displayText(String text) {
+        message = text;
     }
 
     @Override
@@ -79,6 +120,7 @@ public class WizardView extends PApplet implements IWizardView {
         if(event.getKeyCode() == LEFT) {
             selectedCardIndex = Math.abs(--selectedCardIndex % cardsInHand);
         }
+        // TODO: Maybe add a method that increases the selected card index by 1, so that when an input fails, the index doesn't change
         if(event.getKeyCode() == ENTER) {
             controller.cardInput(selectedCardIndex--);
             selectedCardIndex = Math.max(selectedCardIndex, 0);
