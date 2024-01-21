@@ -70,6 +70,7 @@ public class WizardView extends PApplet implements IWizardView {
     @Override
     public void drawCallingTricksScreen(List<Player> players, int round, byte trump, int currentPlayerNum, int assignedPlayerNum) {
         background(0);
+        textSize(16);
         StringBuilder result = new StringBuilder();
         result.append("Round: ").append(round).append("\n");
         result.append("Trump card: ").append(cardToString(trump)).append("\n");

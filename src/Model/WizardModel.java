@@ -20,8 +20,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.lang.Integer.MIN_VALUE;
-
 // CurrentPlayer is calculated using the startingPlayer
 // startingPlayer is used to remember which player is currently calling tricks
 
@@ -52,7 +50,8 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         int currentPlayer = (startingPlayer + trick.size()) % players.size();
         byte firstNonFoolCard = trick.stream().filter(c -> valueMask.apply(c) != fool).findFirst().orElse(card);
 
-        assert isLegalMove(card) != 0;
+        //TODO: change asserts
+        assert isLegalMove(card) == 0;
         // Set required color and trump flags, if they apply
         List<Player> p = new ArrayList<>(players);
         List<Byte> t = new ArrayList<>(trick);
@@ -69,11 +68,14 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         assert isTrickOver(): "Not all players have played a card yet.";
         List<Player> p = new ArrayList<>(players);
         int winner;
-        byte winningCard;
+        byte winningValue;
 
-        winningCard = valueMask.apply(trick.stream().filter(n -> (n & wizard) == wizard).findFirst().orElse(trick.stream().map(valueMask).reduce((byte) 0, (a, b) -> (a > b ? a : b))));
-
-        winner = (IntStream.range(0, trick.size()-1).filter(i -> valueMask.apply(trick.get(i)) == winningCard).findAny().orElse(-1) + startingPlayer) % players.size();
+        winningValue = valueMask.apply(trick.stream().filter(n -> (n & wizard) == wizard).findFirst().orElse(trick.stream().map(valueMask).reduce((byte) 0, (a, b) -> (a > b ? a : b))));
+        //Test
+        System.out.println(winningValue);
+        trick.stream().map(valueMask).forEach(System.out::println);
+        // Error here, for some reason findAny() doesn't find any sometimes
+        winner = (IntStream.range(0, trick.size()-1).filter(i -> valueMask.apply(trick.get(i)) == winningValue).findAny().orElse(-1) + startingPlayer) % players.size();
 
         // Testing purposes
         System.out.println("Player " + winner + " won the trick.");
@@ -85,7 +87,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
     public WizardModel endRound() {
         assert isRoundOver(): "Not all players have played all their cards yet, or the trick still needs to be ended.";
         List<Player> p = new ArrayList<>(players);
-        p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).setTricksCalled(0).setTricksWon(0));
+        p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).setTricksCalled(0).setTricksWon(0).resetCalledTricks());
         return new WizardModel(List.copyOf(p), List.of(), round+1, (round+1)%players.size(), (byte) 0, totalTricksCalled, -1);
     }
     public WizardModel addPlayer() {

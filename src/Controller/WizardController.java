@@ -61,6 +61,8 @@ public class WizardController implements IWizardController{
                     if (model.isGameOver()) gameState = GameState.GAME_OVER;
                     else {
                         model = model.dealCards();
+                        //TESTING
+                        assignedPlayerNum = (model.round()-1)%model.players().size();
                         gameState = GameState.CALLING_TRICKS;
                         // TODO: Display the scores being updated, maybe store the points before model.endRound()?
                     }
