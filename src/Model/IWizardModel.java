@@ -11,6 +11,7 @@ public interface IWizardModel {
 //    IWizardModel undoPlayCard();
     IWizardModel endTrick();
     IWizardModel endRound();
+    IWizardModel updateModel();
     int isLegalTrickCall(int tricksCalled, int playerNum);
     int isLegalMove(byte card);
     boolean isGameOver();

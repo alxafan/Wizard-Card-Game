@@ -4,7 +4,7 @@ import Controller.WizardController;
 import processing.core.PApplet;
 import View.WizardView;
 
-public class Main {
+public final class Main {
     public static void main(String[] args) {
         var model = new WizardModel();
         // Change this to the player number assigned by the server

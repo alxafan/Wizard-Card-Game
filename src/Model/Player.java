@@ -19,8 +19,9 @@ public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score
     public Player addToScore(int points) {return new Player(hand, tricksCalled, tricksWon, score + points, hasCalledTrick);}
     public Player setTricksCalled(int amount) {return new Player(hand, amount, tricksWon, score, true);}
     public Player resetCalledTricks(){return new Player(hand, tricksCalled, tricksWon, score, false);}
+
+
     // toString for Testing
-    @Override
     public String toString() {
         StringBuilder result = new StringBuilder("Player %d: \n");
         hand.forEach(card -> result.append(WizardModel.cardToString(card)).append("\n"));

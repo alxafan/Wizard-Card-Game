@@ -3,6 +3,7 @@ package View;
 import Controller.IWizardController;
 import controlP5.*;
 import processing.core.PApplet;
+import processing.core.PImage;
 import processing.event.KeyEvent;
 import Model.Player;
 
@@ -16,6 +17,7 @@ public class WizardView extends PApplet implements IWizardView {
     private int selectedCardIndex = 0;
     private int cardsInHand = 0;
     private String message = "";
+    private final PImage[] cardImages = new PImage[15];
 
     private ControlP5 cp5;
     private Textfield tricksCallField;
@@ -32,6 +34,8 @@ public class WizardView extends PApplet implements IWizardView {
 
     @Override
     public void setup() {
+        for (int i = 0; i < cardImages.length; i++) cardImages[i] = loadImage("Card_%d.png".formatted(i));
+
         cp5 = new ControlP5(this);
 
         tricksCallField = cp5.addTextfield("Amount");
@@ -76,6 +80,9 @@ public class WizardView extends PApplet implements IWizardView {
         result.append("Trump card: ").append(cardToString(trump)).append("\n");
         text(result.toString(), 10, 20);
         text(players.get(currentPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
+        for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
+            image(cardImages[i],i*10,i*10);
+        }
         text(message, 150, 500);
 
     }
