@@ -80,28 +80,21 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
     public WizardModel endTrick() {
         assert isTrickOver(): "Not all players have played a card yet.";
         List<Player> p = new ArrayList<>(players);
-        int winner;
+        int winning;
         byte winningValue;
 
         winningValue = valueMask.apply(trick.stream().filter(n -> (n & wizard) == wizard).findFirst().orElse(trick.stream().map(valueMask).reduce((byte) 0, (a, b) -> (a > b ? a : b))));
-        //TODO: what is going on here?
-        System.out.println(winningValue);
-        trick.stream().map(valueMask).forEach(System.out::println);
-        // Error here, for some reason findAny() doesn't find any sometimes
-        winner = (IntStream.range(0, trick.size()-1).filter(i -> valueMask.apply(trick.get(i)) == winningValue).findAny().orElse(-1) + startingPlayer) % players.size();
+        winning = (IntStream.range(0, trick.size()).filter(i -> valueMask.apply(trick.get(i)) == winningValue).findAny().orElse(-1) + startingPlayer) % players.size();
 
-        // Testing purposes
-        System.out.println("Player " + winner + " won the trick.");
-
-        p = replaceAtIndex(p,winner,p.get(winner).setTricksWon(p.get(winner).tricksWon()+1));
+        p = replaceAtIndex(p,winning,p.get(winning).setTricksWon(p.get(winning).tricksWon()+1));
         // clears the trick by creating a new empty list
-        return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0, totalTricksCalled, winner);
+        return new WizardModel(List.copyOf(p), List.of(), round, winning, (byte) 0, totalTricksCalled, winning);
     }
     public WizardModel endRound() {
         assert isRoundOver(): "Not all players have played all their cards yet, or the trick still needs to be ended.";
         List<Player> p = new ArrayList<>(players);
         p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).resetTricks());
-        return new WizardModel(List.copyOf(p), List.of(), round+1, (round+1)%players.size(), (byte) 0, totalTricksCalled, winner);
+        return new WizardModel(List.copyOf(p), List.of(), round+1, round%players.size(), (byte) 0, totalTricksCalled, winner);
     }
     WizardModel addPlayer() {
         List<Player> p = new ArrayList<>(players);
@@ -148,7 +141,8 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         // also prevents players whose turn it is not from playing a card, as all cards only occur once and only the current player has the playable cards this trick
         // also allows for only valid cards to be played, as only valid cards are dealt out
         if (!players.get(currentPlayer).hand().contains(card)) return 2;
-        if (!wizardPlayedFirst && valueMask.apply(card) != wizard  && valueMask.apply(card) != fool && firstNonFoolCard != fool && !colorMask.apply(firstNonFoolCard).equals(colorMask.apply(card)) && players.get(currentPlayer).hand().stream().anyMatch(c -> colorMask.apply(c).equals(colorMask.apply(firstNonFoolCard)))) return 3; // this part is necessary, because it is possible that a player does not have a matching color on his hand return 3;
+        // this part is necessary, because it is possible that a player does not have a matching color on his hand;
+        if (!wizardPlayedFirst && (valueMask.apply(card) != wizard) && (valueMask.apply(card) != fool) && (firstNonFoolCard != fool) && (!colorMask.apply(firstNonFoolCard).equals(colorMask.apply(card))) && (players.get(currentPlayer).hand().stream().anyMatch(c -> colorMask.apply(c).equals(colorMask.apply(firstNonFoolCard))))) return 3;
 
         return 0;
     }

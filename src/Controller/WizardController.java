@@ -34,6 +34,8 @@ public class WizardController implements IWizardController{
                 view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
                 break;
             case PLAYING_TRICK:
+                // crutch solution
+                if (!model.allPlayersCalledTricks()) gameState = GameState.CALLING_TRICKS;
                 if (model.isTrickOver()) {
                     model.endTrick();
                 }

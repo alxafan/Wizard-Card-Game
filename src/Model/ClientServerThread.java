@@ -115,13 +115,18 @@ public class ClientServerThread extends Thread implements IWizardModel{
                     newGame();
 
                     while (true) {
-                        for(ObjectInputStream oi : serverOIS) {
-                            Object o = oi.readObject();
-                            if (o instanceof WizardModel) {
-                                System.out.println("Server: new Model received");
-                                model = (WizardModel) o;
-                                serverOOS.forEach(ou -> send(ou, model));
-                            }
+                        // Waits for client in line to send information TODO: handle who gets to speak when
+                        if(!model.allPlayersCalledTricks()) {
+                            int currentCaller = (int) ((model.getCurrentPlayerNum() + model.players().stream().filter(Player::hasCalledTrick).count()) % model.players().size());
+                            if (currentCaller == 0) continue;
+                            // current-1 is used, because the server stores player 1 as 0 and player 2 as 1 ...
+                            model = (WizardModel) serverOIS.get(currentCaller-1).readObject();
+                            serverOOS.forEach(ou -> send(ou, model));
+                        } else {
+                            if (model.getCurrentPlayerNum() == 0) continue;
+                            // current-1 is used, because the server stores player 1 as 0 and player 2 as 1 ...
+                            model = (WizardModel) serverOIS.get(model.getCurrentPlayerNum()-1).readObject();
+                            serverOOS.forEach(ou -> send(ou, model));
                         }
                     }
                 } catch (IOException e) {throw new RuntimeException(e);}
@@ -155,15 +160,18 @@ public class ClientServerThread extends Thread implements IWizardModel{
         }
     }
     public void setTricksCalled(int tricksCalled, int playerNum) {
-        model = model.setTricksCalled(tricksCalled,playerNum);
-        System.out.println(tricksCalled);
-        if (isServer()) serverOOS.forEach(oos -> send(oos, model));
-        else send(oos, model);
+        if (isServer()) {
+            model = model.setTricksCalled(tricksCalled,playerNum);
+            serverOOS.forEach(oos -> send(oos, model));
+        }
+        else send(oos, model.setTricksCalled(tricksCalled, playerNum));
     }
     public void playCard(byte card) {
-        model = model.playCard(card);
-        if (isServer()) serverOOS.forEach(oos -> send(oos, model));
-        else send(oos, model);
+        if (isServer()) {
+            model = model.playCard(card);
+            serverOOS.forEach(oos -> send(oos, model));
+        }
+        else send(oos, model.playCard(card));
     }
     public void endTrick() {
         if (isServer()) {
@@ -173,7 +181,7 @@ public class ClientServerThread extends Thread implements IWizardModel{
     }
     public void endRound() {
         if (isServer()) {
-            model = model.endRound();
+            model = model.endRound().dealCards();
             serverOOS.forEach(oos -> send(oos, model));
         }
     }
