@@ -10,7 +10,7 @@ import java.util.*;
 public class ClientServerThread extends Thread implements IWizardModel{
     private final String ip;
     private final int port;
-    private final int playerCount = 2; // TODO: implement way to change this more easily
+    private final int playerCount; // TODO: implement way to change this more easily
     private ServerSocket serversocket;
     private ArrayList<Socket> sockets = new ArrayList<>();
     private WizardModel model;
@@ -20,9 +20,10 @@ public class ClientServerThread extends Thread implements IWizardModel{
     private int assignedPlayerNumber;
     private int inputCheckCounter;
 
-    private ClientServerThread(String ip, int port) {
+    private ClientServerThread(String ip, int port, int playerCount) {
         this.ip = ip;
         this.port = port;
+        this.playerCount = playerCount-1;
         model = new WizardModel();
     }
     /**
@@ -31,8 +32,8 @@ public class ClientServerThread extends Thread implements IWizardModel{
      * @param port  Port to establish the connection
      * @return A new ClientServerThread-object.
      */
-    public static ClientServerThread newAny(String ip, int port) {
-        var cst = new ClientServerThread(ip, port);
+    public static ClientServerThread newAny(String ip, int port, int playerCount) {
+        var cst = new ClientServerThread(ip, port, playerCount);
         cst.reconnect();
         return cst;
     }
@@ -116,7 +117,7 @@ public class ClientServerThread extends Thread implements IWizardModel{
                     newGame();
                     while (true) {
                         try {
-                            sockets.get(inputCheckCounter).setSoTimeout(1000);
+                            sockets.get(inputCheckCounter).setSoTimeout(100);
                             model = (WizardModel) serverOIS.get(inputCheckCounter).readObject();
                             serverOOS.forEach(ou -> send(ou, model));
                         } catch (SocketTimeoutException e) { inputCheckCounter = (inputCheckCounter+1)%playerCount;}

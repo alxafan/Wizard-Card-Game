@@ -40,14 +40,14 @@ public class WizardView extends PApplet implements IWizardView {
 
         tricksCallField = cp5.addTextfield("Amount");
         tricksCallField.setLabel("")
-                .setPosition(150, 30)
+                .setPosition(20, 350)
                 .setSize(40, 18)
                 .setText("0")
                 .hide();
 
 
         enterTricksCalled = cp5.addButton("Enter");
-        enterTricksCalled.setPosition(200, 30)
+        enterTricksCalled.setPosition(70, 350)
                 .setSize(25, 18)
                 .hide();
 
@@ -79,12 +79,21 @@ public class WizardView extends PApplet implements IWizardView {
         enterTricksCalled.show();
         background(0);
         textSize(16);
-        StringBuilder result = new StringBuilder();
-        result.append("Round: ").append(round).append("\n");
-        result.append("Trump card: ").append(cardToString(trump)).append("\n");
-        text(result.toString(), 10, 20);
+        for (int i = 0; i < players.size(); i++) {
+            text("Player " + i + " score: " + players.get(i).score()
+                            + "   called-tricks: " + players.get(i).tricksCalled()
+                    , 300,50+20*i);
+        }
+
+        text("Round: " + round, 10, 20);
+        text("Trump card: ",10,40);
+        drawCards(trump, 10,50);
         text(players.get(assignedPlayerNum).toString().formatted(assignedPlayerNum), 300, 20);
-        drawCards(players, assignedPlayerNum);
+        for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
+            byte card = players.get(assignedPlayerNum).hand().get(i);
+            drawCards(card,20+i*65,400);
+        }
+        text(message, 400, 20);
     }
 
     @Override
@@ -93,35 +102,47 @@ public class WizardView extends PApplet implements IWizardView {
         enterTricksCalled.hide();
         background(0);
         textSize(16);
+        // used for selectedCard calculation
         cardsInHand = players.get(assignedPlayerNum).hand().size();
 
+        for (int i = 0; i < players.size(); i++) {
+            text("Player " + i + " score: " + players.get(i).score()
+                            + "   called-tricks: " + players.get(i).tricksCalled()
+                            + "   won-tricks: " + players.get(i).tricksWon()
+                    , 300,50+20*i);
+        }
 
         StringBuilder result = new StringBuilder();
-        result.append("Round: ").append(round).append("\n");
-        result.append("Trump card: ").append(cardToString(trump)).append("\n");
-        result.append("Cards in trick: ").append("\n");
-        trick.forEach(c -> result.append(cardToString(c)).append("\n"));
-        text(result.toString(),50,20);
+        text("Round: " + round, 10, 20);
+        text("Trump card: ",10,40);
+        drawCards(trump, 10,50);
+
+        for(int i = 0; i < trick.size(); i++) {
+            byte card = trick.get(i);
+            drawCards(card,350+i*40,230);
+        }
+
         if (cardsInHand <= 0) return;
-        text("Selected card: " + cardToString(players.get(assignedPlayerNum).hand().get(selectedCardIndex)), 10, 550);
-        drawCards(players, assignedPlayerNum);
+        color(255);
+        rect(20+selectedCardIndex*70-5,400-5,70,100);
+
+        for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
+            byte card = players.get(assignedPlayerNum).hand().get(i);
+            drawCards(card,20+i*70,400);
+        }
+        text(message, 400, 20);
     }
 
     //TODO: add position
-    private void drawCards(List<Player> players, int assignedPlayerNum) {
-        for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
-            byte card = players.get(assignedPlayerNum).hand().get(i);
-            switch (colorMask.apply(card)) {
-                case (byte) 0b00000000 -> tint(255,0,0);
-                case (byte) 0b01000000 -> tint(0,255,0);
-                case (byte) 0b10000000 -> tint(0,0,255);
-                case (byte) 0b11000000 -> tint(255,255,0);
-                default -> tint(255);
-            }
-            image(cardImages[valueMask.apply(card)],20+i*65,400);
+    private void drawCards(byte card, float x, float y) {
+        switch (colorMask.apply(card)) {
+            case (byte) 0b00000000 -> tint(255,0,0);
+            case (byte) 0b01000000 -> tint(0,255,0);
+            case (byte) 0b10000000 -> tint(0,0,255);
+            case (byte) 0b11000000 -> tint(255,255,0);
+            default -> tint(255);
         }
-        //TODO: What was this again?
-        text(message, 150, 500);
+        image(cardImages[valueMask.apply(card)],x,y);
     }
 
     @Override
@@ -168,19 +189,8 @@ public class WizardView extends PApplet implements IWizardView {
         }
     }
 
-
-    // REMOVE THIS WHEN DONE
-
     // valueMask modified to ignore flags
     private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00001111);
     private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
-    String cardToString(byte card) {
-        return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
-            case (byte) 0b00000000 -> "Red";
-            case (byte) 0b01000000 -> "Green";
-            case (byte) 0b10000000 -> "Blue";
-            case (byte) 0b11000000 -> "Yellow";
-            default -> "";
-        };
-    }
+
 }

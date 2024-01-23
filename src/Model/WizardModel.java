@@ -152,6 +152,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
     public boolean isRoundOver() {return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();}
     public boolean allPlayersCalledTricks() {return players.stream().allMatch(Player::hasCalledTrick);}
     public int getCurrentPlayerNum() {return (trick.size()+startingPlayer)%players.size();}
+    public int getCurrentTrickCaller() {return (int) (startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size();}
     public List<Integer> getCurrentGameWinner(){
         int winningScore = players.stream().map(Player::score).reduce(Math::max).orElse(-1);
         return IntStream.range(0, players.size()).filter(i -> players.get(i).score() == winningScore).boxed().collect(Collectors.toList());

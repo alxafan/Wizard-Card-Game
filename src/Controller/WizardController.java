@@ -30,7 +30,10 @@ public class WizardController implements IWizardController{
                 if (!model.players().isEmpty() && !model.players().get(0).hand().isEmpty()) gameState = GameState.CALLING_TRICKS;
                 break;
             case CALLING_TRICKS:
+                if (model.winner() != -1) view.displayText("Player " + model.winner() + " won the last trick");
                 if (model.allPlayersCalledTricks()) gameState = GameState.PLAYING_TRICK;
+                // used to signal when it's the players turn to call a trick, 31 is always a legal trick amount, as a game can only last for 30 rounds max
+
                 view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
                 break;
             case PLAYING_TRICK:
@@ -46,7 +49,6 @@ public class WizardController implements IWizardController{
                 if (model.isGameOver()) {
                     gameState = GameState.GAME_OVER;
                 }
-                if (model.winner() != -1) view.displayText("Player " + model.winner() + " won the trick");
                 view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
                 break;
             case GAME_OVER:
@@ -133,6 +135,7 @@ public class WizardController implements IWizardController{
         switch (model.isLegalTrickCall(amount, model.getAssignedPlayerNum())) {
             case 0:
                 model.setTricksCalled(amount, model.getAssignedPlayerNum());
+                view.displayText("");
                 break;
             case 1:
                 view.displayText("All players have called their tricks");
