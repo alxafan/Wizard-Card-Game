@@ -111,11 +111,14 @@ public class ClientServerThread extends Thread implements IWizardModel{
                         //TODO: remove print
                         System.out.println("Connection established with " + sockets.get(i).getInetAddress());
                     }
+
                     newGame();
+
                     while (true) {
                         for(ObjectInputStream oi : serverOIS) {
                             Object o = oi.readObject();
                             if (o instanceof WizardModel) {
+                                System.out.println("Server: new Model received");
                                 model = (WizardModel) o;
                                 serverOOS.forEach(ou -> send(ou, model));
                             }

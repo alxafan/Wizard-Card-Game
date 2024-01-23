@@ -120,6 +120,7 @@ public class WizardView extends PApplet implements IWizardView {
             }
             image(cardImages[valueMask.apply(card)],20+i*60,400);
         }
+        //TODO: What was this again?
         text(message, 150, 500);
     }
 

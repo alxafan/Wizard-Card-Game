@@ -34,7 +34,7 @@ import java.util.stream.*;
  * @param startingPlayer
  * @param trump
  * @param totalTricksCalled
- * @param winner
+ * @param winner is always -1, unless a trick winner was determined recently (endTrick/endRound)
  */
 public record WizardModel(List<Player> players, List<Byte> trick, int round, int startingPlayer, byte trump, int totalTricksCalled, int winner) implements Serializable {
 
@@ -65,11 +65,11 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
 
         //TODO: change asserts
         assert isLegalMove(card) == 0;
-        // Set required color and trump flags, if they apply
+
         List<Player> p = new ArrayList<>(players);
         List<Byte> t = new ArrayList<>(trick);
         p = replaceAtIndex(p,currentPlayer,p.get(currentPlayer).removeCard(card));
-        // Do this when evaluating the trick???
+        // Set required color and trump flags, if they apply
         if (valueMask.apply(card) != wizard && valueMask.apply(card) != fool){
             if (colorMask.apply(card).equals(colorMask.apply(firstNonFoolCard))) card |= 0b00010000;
             if (colorMask.apply(card).equals(colorMask.apply(trump))) card |= 0b00100000;
@@ -84,7 +84,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         byte winningValue;
 
         winningValue = valueMask.apply(trick.stream().filter(n -> (n & wizard) == wizard).findFirst().orElse(trick.stream().map(valueMask).reduce((byte) 0, (a, b) -> (a > b ? a : b))));
-        //Test
+        //TODO: what is going on here?
         System.out.println(winningValue);
         trick.stream().map(valueMask).forEach(System.out::println);
         // Error here, for some reason findAny() doesn't find any sometimes
@@ -100,8 +100,8 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
     public WizardModel endRound() {
         assert isRoundOver(): "Not all players have played all their cards yet, or the trick still needs to be ended.";
         List<Player> p = new ArrayList<>(players);
-        p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).setTricksCalled(0).setTricksWon(0).resetCalledTricks());
-        return new WizardModel(List.copyOf(p), List.of(), round+1, (round+1)%players.size(), (byte) 0, totalTricksCalled, -1);
+        p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).resetTricks());
+        return new WizardModel(List.copyOf(p), List.of(), round+1, (round+1)%players.size(), (byte) 0, totalTricksCalled, winner);
     }
     WizardModel addPlayer() {
         List<Player> p = new ArrayList<>(players);
@@ -133,8 +133,6 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         if (players.stream().filter(Player::hasCalledTrick).count() == players.size()-1 && totalTricksCalled+tricksCalled == round) return 5;
         return 0;
     }
-
-    // TODO: Print the messages in view
     /**
      * Method to check whether a given card can be played or not
      * @param card desired card to be checked
@@ -170,7 +168,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         l.set(index, element);
         return List.copyOf(l);
     }
-    static String cardToString(byte card) {
+    String cardToString(byte card) {
         return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
             case (byte) 0b00000000 -> "Red";
             case (byte) 0b01000000 -> "Green";

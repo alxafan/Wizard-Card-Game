@@ -36,6 +36,27 @@ public class WizardController implements IWizardController{
             case PLAYING_TRICK:
                 if (model.isTrickOver()) {
                     model.endTrick();
+                }
+                if (model.isRoundOver()) {
+                    model.endRound();
+                    gameState = GameState.CALLING_TRICKS;
+                }
+                if (model.isGameOver()) {
+                    gameState = GameState.GAME_OVER;
+                }
+                if (model.winner() != -1) view.displayText("Player " + model.winner() + " won the trick");
+                view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
+                break;
+            case GAME_OVER:
+                view.drawEndScreen(model.getCurrentGameWinner());
+                break;
+            default:
+                break;
+        }
+    }
+    /*
+    if (model.isTrickOver()) {
+                    model.endTrick();
                     gameState = GameState.CALLING_TRICKS;
                     view.displayText("");
                     view.displayText("Player " + model.winner() + " won this trick.");
@@ -53,15 +74,7 @@ public class WizardController implements IWizardController{
                         // TODO: Display the scores being updated, maybe store the points before model.endRound()?
                     }
                 }
-                view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
-                break;
-            case GAME_OVER:
-                view.drawEndScreen(model.getCurrentGameWinner());
-                break;
-            default:
-                break;
-        }
-    }
+     */
 
     @Override
     public void cardInput(int cardIndex) {

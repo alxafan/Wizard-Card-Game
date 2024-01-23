@@ -18,6 +18,6 @@ public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score
     public Player setTricksWon(int amount) {return new Player(hand, tricksCalled, amount, score, hasCalledTrick);}
     public Player addToScore(int points) {return new Player(hand, tricksCalled, tricksWon, score + points, hasCalledTrick);}
     public Player setTricksCalled(int amount) {return new Player(hand, amount, tricksWon, score, true);}
-    public Player resetCalledTricks(){return new Player(hand, tricksCalled, tricksWon, score, false);}
+    public Player resetTricks(){return new Player(hand, 0, 0, score, false);}
 
 }
