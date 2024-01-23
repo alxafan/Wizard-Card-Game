@@ -94,6 +94,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         assert isRoundOver(): "Not all players have played all their cards yet, or the trick still needs to be ended.";
         List<Player> p = new ArrayList<>(players);
         p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).resetTricks());
+        // clears the trick by creating a new empty list
         return new WizardModel(List.copyOf(p), List.of(), round+1, round%players.size(), (byte) 0, totalTricksCalled, winner);
     }
     WizardModel addPlayer() {

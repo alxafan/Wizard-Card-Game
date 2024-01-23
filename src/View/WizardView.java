@@ -118,7 +118,7 @@ public class WizardView extends PApplet implements IWizardView {
                 case (byte) 0b11000000 -> tint(255,255,0);
                 default -> tint(255);
             }
-            image(cardImages[valueMask.apply(card)],20+i*60,400);
+            image(cardImages[valueMask.apply(card)],20+i*65,400);
         }
         //TODO: What was this again?
         text(message, 150, 500);

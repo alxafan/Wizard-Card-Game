@@ -18,6 +18,7 @@ public class ClientServerThread extends Thread implements IWizardModel{
     private ArrayList<ObjectOutputStream> serverOOS = new ArrayList<>();
     private ArrayList<ObjectInputStream> serverOIS = new ArrayList<>();
     private int assignedPlayerNumber;
+    private int inputCheckCounter;
 
     private ClientServerThread(String ip, int port) {
         this.ip = ip;
@@ -113,21 +114,12 @@ public class ClientServerThread extends Thread implements IWizardModel{
                     }
 
                     newGame();
-
                     while (true) {
-                        // Waits for client in line to send information TODO: handle who gets to speak when
-                        if(!model.allPlayersCalledTricks()) {
-                            int currentCaller = (int) ((model.getCurrentPlayerNum() + model.players().stream().filter(Player::hasCalledTrick).count()) % model.players().size());
-                            if (currentCaller == 0) continue;
-                            // current-1 is used, because the server stores player 1 as 0 and player 2 as 1 ...
-                            model = (WizardModel) serverOIS.get(currentCaller-1).readObject();
+                        try {
+                            sockets.get(inputCheckCounter).setSoTimeout(1000);
+                            model = (WizardModel) serverOIS.get(inputCheckCounter).readObject();
                             serverOOS.forEach(ou -> send(ou, model));
-                        } else {
-                            if (model.getCurrentPlayerNum() == 0) continue;
-                            // current-1 is used, because the server stores player 1 as 0 and player 2 as 1 ...
-                            model = (WizardModel) serverOIS.get(model.getCurrentPlayerNum()-1).readObject();
-                            serverOOS.forEach(ou -> send(ou, model));
-                        }
+                        } catch (SocketTimeoutException e) { inputCheckCounter = (inputCheckCounter+1)%playerCount;}
                     }
                 } catch (IOException e) {throw new RuntimeException(e);}
             }
@@ -149,7 +141,6 @@ public class ClientServerThread extends Thread implements IWizardModel{
         if (isServer()) {
             model = model.newGame();
             for (int i = 0; i <= sockets.size(); i++) model = model.addPlayer();
-            System.out.println("test");
             serverOOS.forEach(oos -> send(oos, model));
         }
     }
