@@ -18,8 +18,7 @@ System.out.println(w = w.dealCards());
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.*;
 
 // CurrentPlayer is calculated using the startingPlayer
 // startingPlayer is used to remember which player is currently calling tricks
@@ -27,7 +26,8 @@ import java.util.stream.IntStream;
 /**
  * The main model class. Handles the game's logic and stores the relevant data.
  * Any time something is changed about the model, it should be replaced by a new one wherever it is used,
- * as all fields are final.
+ * as all fields are final. This can be augmented with an AI, to make it a single player game
+ *
  * @param players
  * @param trick
  * @param round
@@ -35,29 +35,17 @@ import java.util.stream.IntStream;
  * @param trump
  * @param totalTricksCalled
  * @param winner
- * @param networkThread
  */
-public record WizardModel(List<Player> players, List<Byte> trick, int round, int startingPlayer, byte trump, int totalTricksCalled,
-                          int winner, ClientServerThread networkThread) implements IWizardModel, Serializable {
+public record WizardModel(List<Player> players, List<Byte> trick, int round, int startingPlayer, byte trump, int totalTricksCalled, int winner) implements Serializable {
 
     private static final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
     private static final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
     private static final byte wizard = 0b00001110;
     private static final byte fool = 0b00000000;
 
-    public WizardModel() {
-        this(List.of(), List.of(), 1, 0, (byte) 0, 0, -1, ClientServerThread.newAny("localhost", 5555));
-        networkThread.setModel(this);
-    }
+    public WizardModel() {this(List.of(), List.of(), 1, 0, (byte) 0, 0, -1);}
 
-    /**
-     * method to start a new game, keeps the same server/client Thread
-     * @param networkThread previous server/client thread
-     */
-    private WizardModel(ClientServerThread networkThread) {
-        this(List.of(), List.of(), 1, 0, (byte) 0, 0, -1,networkThread);
-    }
-    public WizardModel newGame() {return new WizardModel(networkThread);}
+    public WizardModel newGame() {return new WizardModel();}
     /**
      * Method that deals out cards to the players.
      */
@@ -65,7 +53,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         ArrayList<Byte> deck = new ArrayList<>(List.of((byte) 0,(byte) 1,(byte) 2,(byte) 3,(byte) 4,(byte) 5,(byte) 6,(byte) 7,(byte) 8,(byte) 9,(byte) 10,(byte) 11,(byte) 12,(byte) 13,(byte) 14,(byte) 64,(byte) 65,(byte) 66,(byte) 67,(byte) 68,(byte) 69,(byte) 70,(byte) 71,(byte) 72,(byte) 73,(byte) 74,(byte) 75,(byte) 76,(byte) 77,(byte) 78,(byte) 128,(byte) 129,(byte) 130,(byte) 131,(byte) 132,(byte) 133,(byte) 134,(byte) 135,(byte) 136,(byte) 137,(byte) 138,(byte) 139,(byte) 140,(byte) 141,(byte) 142,(byte) 192,(byte) 193,(byte) 194,(byte) 195,(byte) 196,(byte) 197,(byte) 198,(byte) 199,(byte) 200,(byte) 201,(byte) 202,(byte) 203,(byte) 204,(byte) 205,(byte) 206));
         List<Player> p = new ArrayList<>(players);
         for (int i = 0; i < round; i++) p.replaceAll(player -> player.addCard(deck.remove((int) (Math.random()*deck.size()))));
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, deck.remove((int) (Math.random()*deck.size())), totalTricksCalled, -1, networkThread);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, deck.remove((int) (Math.random()*deck.size())), totalTricksCalled, -1);
     }
     /**
      * Method which plays a card into the trick, while making sure that no wizard rules are broken. Keep in mind that this only works if the controller makes sure that the player whose turn it is plays
@@ -87,7 +75,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
             if (colorMask.apply(card).equals(colorMask.apply(trump))) card |= 0b00100000;
         }
         t.add(card);
-        return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled, -1, networkThread);
+        return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled, -1);
     }
     public WizardModel endTrick() {
         assert isTrickOver(): "Not all players have played a card yet.";
@@ -107,18 +95,18 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
 
         p = replaceAtIndex(p,winner,p.get(winner).setTricksWon(p.get(winner).tricksWon()+1));
         // clears the trick by creating a new empty list
-        return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0, totalTricksCalled, winner, networkThread);
+        return new WizardModel(List.copyOf(p), List.of(), round, winner, (byte) 0, totalTricksCalled, winner);
     }
     public WizardModel endRound() {
         assert isRoundOver(): "Not all players have played all their cards yet, or the trick still needs to be ended.";
         List<Player> p = new ArrayList<>(players);
         p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).setTricksCalled(0).setTricksWon(0).resetCalledTricks());
-        return new WizardModel(List.copyOf(p), List.of(), round+1, (round+1)%players.size(), (byte) 0, totalTricksCalled, -1, networkThread);
+        return new WizardModel(List.copyOf(p), List.of(), round+1, (round+1)%players.size(), (byte) 0, totalTricksCalled, -1);
     }
-    public WizardModel addPlayer() {
+    WizardModel addPlayer() {
         List<Player> p = new ArrayList<>(players);
         p.add(new Player());
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled, -1, networkThread);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled, -1);
     }
     public WizardModel setTricksCalled(int tricksCalled, int playerNum) {
         assert !allPlayersCalledTricks(): "All players have called their tricks";
@@ -129,7 +117,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
 
         List<Player> p = new ArrayList<>(players);
         p = replaceAtIndex(p,playerNum, p.get(playerNum).setTricksCalled(tricksCalled));
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled + tricksCalled, -1, networkThread);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled + tricksCalled, -1);
     }
 
     /**
@@ -137,9 +125,6 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
      * this method should get called before any checks in the controller
      * @return the most up-to-date Model
      */
-    public WizardModel updateModel(){
-        return networkThread().getModel();
-    }
     public int isLegalTrickCall(int tricksCalled, int playerNum) {
         if (allPlayersCalledTricks()) return 1;
         if (! ((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size() == playerNum)) return 2;

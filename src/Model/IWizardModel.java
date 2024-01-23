@@ -3,15 +3,13 @@ package Model;
 import java.util.List;
 
 public interface IWizardModel {
-    IWizardModel newGame();
-    IWizardModel dealCards();
-    IWizardModel addPlayer();
-    IWizardModel setTricksCalled(int tricksCalled, int playerNum);
-    IWizardModel playCard(byte card);
+    void newGame();
+    void dealCards();
+    void setTricksCalled(int tricksCalled, int playerNum);
+    void playCard(byte card);
 //    IWizardModel undoPlayCard();
-    IWizardModel endTrick();
-    IWizardModel endRound();
-    IWizardModel updateModel();
+    void endTrick();
+    void endRound();
     int isLegalTrickCall(int tricksCalled, int playerNum);
     int isLegalMove(byte card);
     boolean isGameOver();
@@ -23,6 +21,7 @@ public interface IWizardModel {
     byte trump();
     int getCurrentPlayerNum();
     List<Integer> getCurrentGameWinner();
+    int getAssignedPlayerNum();
     int round();
     int winner();
 

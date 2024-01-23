@@ -1,9 +1,9 @@
 package Model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serializable;
+import java.util.*;
 
-public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score, boolean hasCalledTrick) {
+public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score, boolean hasCalledTrick) implements Serializable {
     public Player() {this(List.of(), 0, 0, 0, false);}
     public Player addCard(byte card) {
         ArrayList<Byte> newHand = new ArrayList<>(hand);

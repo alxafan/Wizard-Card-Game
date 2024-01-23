@@ -1,14 +1,14 @@
 
-import Model.WizardModel;
+import Model.ClientServerThread;
 import Controller.WizardController;
 import processing.core.PApplet;
 import View.WizardView;
 
 public final class Main {
     public static void main(String[] args) {
-        var model = new WizardModel();
-        // Change this to the player number assigned by the server
-        var controller = new WizardController(0);
+        var model = ClientServerThread.newAny("localhost", 5555);
+        model.start();
+        var controller = new WizardController();
         var view = new WizardView();
 
         // Connect M, V and C

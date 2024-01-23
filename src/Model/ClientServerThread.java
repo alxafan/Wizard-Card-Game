@@ -1,31 +1,28 @@
 package Model;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.ArrayList;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * This is a thread that can be either a client or a server.
  */
-public class ClientServerThread extends Thread {
+public class ClientServerThread extends Thread implements IWizardModel{
     private final String ip;
     private final int port;
-    private final int playerCount = 3; // TODO: implement way to change this more easily
+    private final int playerCount = 2; // TODO: implement way to change this more easily
     private ServerSocket serversocket;
     private ArrayList<Socket> sockets = new ArrayList<>();
     private WizardModel model;
     private ObjectOutputStream oos;
-    private ArrayList<ObjectOutputStream> serverOOS;
-    private ArrayList<ObjectInputStream> serverOIS;
+    private ArrayList<ObjectOutputStream> serverOOS = new ArrayList<>();
+    private ArrayList<ObjectInputStream> serverOIS = new ArrayList<>();
     private int assignedPlayerNumber;
 
     private ClientServerThread(String ip, int port) {
         this.ip = ip;
         this.port = port;
+        model = new WizardModel();
     }
     /**
      * Creates a new client if a server exists or becomes a server.
@@ -39,13 +36,6 @@ public class ClientServerThread extends Thread {
         return cst;
     }
 
-    void setModel(WizardModel model) {
-        this.model = model;
-    }
-    WizardModel getModel() {
-        return model;
-    }
-
     /**
      * Creates a new connection either as a client or as a server.
      */
@@ -53,22 +43,17 @@ public class ClientServerThread extends Thread {
         System.out.println("Reconnect");
         // Close all previously active sockets and streams before reconnecting
         if(!sockets.isEmpty()) {
-            try {
-                for (Socket socket : sockets) {
-                    socket.close();
-                }
+            try { for (Socket socket : sockets) {socket.close();}
             } catch (IOException e) {}
             sockets.clear();
         }
         if(serversocket != null) {
-            try {
-                serversocket.close();
+            try { serversocket.close();
             } catch (IOException e) {}
             serversocket = null;
         }
         if(oos != null) {
-            try {
-                oos.close();
+            try { oos.close();
             } catch (IOException e) {}
             oos = null;
         }
@@ -91,34 +76,15 @@ public class ClientServerThread extends Thread {
         }
     }
 
-    public synchronized void send(Object obj) {
+    public synchronized void send(ObjectOutputStream oos, Object obj) {
         try {
             if (oos != null) {
                 oos.reset();
                 oos.writeObject(obj);
+                System.out.println("Object sent");
             }
-        } catch (IOException e) {
-            // Nothing. If sending not possible, do not send anything.
+        } catch (IOException e) { System.out.println("something went wrong");
         }
-    }
-
-    /**
-     * Method to send all clients the same object, should only be accessed by a server
-     * @param obj the object to be sent
-     */
-    public synchronized void groupSend(Object obj) {
-        // assert to signalize the requirements
-        assert isServer() && !serverOOS.isEmpty();
-        serverOOS.forEach(oos -> {
-            try {
-                if (oos != null) {
-                    oos.reset();
-                    oos.writeObject(obj);
-                }
-            } catch (IOException ee) {
-                // Nothing. If sending not possible, do not send anything.
-            }
-        });
     }
 
     /**
@@ -132,48 +98,86 @@ public class ClientServerThread extends Thread {
     @Override
     public void run() {
         try {
-            // If this is a server accept one client
-            if (sockets.isEmpty()) {
+            // If this is a server accept a number of clients
+            if (isServer()) {
                 assignedPlayerNumber = 0;
                 for (int i = 0; i < playerCount; i++) sockets.add(sockets.size(),serversocket.accept());
-                for (int i = 0; i < sockets.size(); i++) {
-                    try {
+                try {
+                    for (int i = 0; i < sockets.size(); i++) {
                         serverOOS.add(serverOOS.size(), new ObjectOutputStream(sockets.get(serverOOS.size()).getOutputStream()));
                         serverOOS.get(i).write(i+1);
                         serverOIS.add(i, new ObjectInputStream(sockets.get(i).getInputStream()));
+
                         //TODO: remove print
                         System.out.println("Connection established with " + sockets.get(i).getInetAddress());
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
                     }
-                }
-            } else {
-                ObjectInputStream ois = new ObjectInputStream(sockets.get(0).getInputStream());
-                while (ois.read() == 0);
-                assignedPlayerNumber = ois.read();
-                ois.close();
+                    newGame();
+                    while (true) {
+                        for(ObjectInputStream oi : serverOIS) {
+                            Object o = oi.readObject();
+                            if (o instanceof WizardModel) {
+                                model = (WizardModel) o;
+                                serverOOS.forEach(ou -> send(ou, model));
+                            }
+                        }
+                    }
+                } catch (IOException e) {throw new RuntimeException(e);}
             }
+            ObjectInputStream ois = new ObjectInputStream(sockets.get(0).getInputStream());
+            assignedPlayerNumber = ois.read();
+            System.out.println("assigned PlayerNumber = " + assignedPlayerNumber);
+
             while (true) {
-                if (isServer()) {
-                    // read first, update, then send to all others
-                    for(ObjectInputStream ois : serverOIS) {
-                        WizardModel obj = (WizardModel) ois.readObject();
-                        if (!obj.equals(model)) groupSend(obj);
-                    }
-
-                } else {
-                    ObjectInputStream ois = new ObjectInputStream(sockets.get(0).getInputStream());
-                    model = (WizardModel) ois.readObject();
-                    send(model);
-                }
-
+                WizardModel modelTest = (WizardModel) ois.readObject();
+                if(!modelTest.equals(model)) System.out.println("new Model received");
+                model = modelTest;
             }
+
         } catch (IOException e) {
             // Connection lost end game prematurely
-        } catch (ClassNotFoundException e) {
-            // This should not happen, since all classes are known in both server and client.
-            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {throw new RuntimeException(e);} // This should not happen, since all classes are known in both server and client.
+    }
+
+    public void newGame() {
+        if (isServer()) {
+            model = model.newGame();
+            for (int i = 0; i <= sockets.size(); i++) model = model.addPlayer();
+            System.out.println("test");
+            serverOOS.forEach(oos -> send(oos, model.newGame()));
         }
     }
+    public void dealCards() {
+        if (isServer()) {
+            model = model.dealCards();
+            serverOOS.forEach(oos -> send(oos, model));
+        }
+    }
+    public void setTricksCalled(int tricksCalled, int playerNum) {
+        model = model.setTricksCalled(tricksCalled,playerNum);
+        System.out.println(tricksCalled);
+        if (isServer()) serverOOS.forEach(oos -> send(oos, model));
+        else send(oos, model);
+    }
+    public void playCard(byte card) {
+        model = model.playCard(card);
+        if (isServer()) serverOOS.forEach(oos -> send(oos, model));
+        else send(oos, model);
+    }
+    public void endTrick() {if (isServer()) serverOOS.forEach(oos -> send(oos, model.endTrick()));}
+    public void endRound() {if (isServer()) serverOOS.forEach(oos -> send(oos, model.endRound()));}
+    public int isLegalTrickCall(int tricksCalled, int playerNum) {return model.isLegalTrickCall(tricksCalled, playerNum);}
+    public int isLegalMove(byte card) {return model.isLegalMove(card);}
+    public boolean isGameOver() {return model.isGameOver();}
+    public boolean isTrickOver() {return model.isTrickOver();}
+    public boolean isRoundOver() {return model.isRoundOver();}
+    public boolean allPlayersCalledTricks() {return model.allPlayersCalledTricks();}
+    public List<Player> players() {return model.players();}
+    public List<Byte> trick() {return model.trick();}
+    public byte trump() {return model.trump();}
+    public int round() {return model.round();}
+    public int winner() {return model.winner();}
+    public int getCurrentPlayerNum() {return model.getCurrentPlayerNum();}
+    public List<Integer> getCurrentGameWinner() {return model.getCurrentGameWinner();}
+    public int getAssignedPlayerNum() {return assignedPlayerNumber;}
 }
 

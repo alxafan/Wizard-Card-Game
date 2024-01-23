@@ -79,11 +79,8 @@ public class WizardView extends PApplet implements IWizardView {
         result.append("Round: ").append(round).append("\n");
         result.append("Trump card: ").append(cardToString(trump)).append("\n");
         text(result.toString(), 10, 20);
-        text(players.get(currentPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
-        for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
-            image(cardImages[i],i*10,i*10);
-        }
-        text(message, 150, 500);
+        text(players.get(assignedPlayerNum).toString().formatted(assignedPlayerNum), 300, 20);
+        drawCards(players, assignedPlayerNum);
 
     }
 
@@ -103,8 +100,16 @@ public class WizardView extends PApplet implements IWizardView {
         result.append("\n").append("Players hands: ").append("\n").append("\n");
         players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
 
-        text(players.get(currentPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
+        text(players.get(assignedPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
         text("Selected card: " + cardToString(players.get(currentPlayerNum).hand().get(selectedCardIndex)), 10, 550);
+        drawCards(players, assignedPlayerNum);
+    }
+
+    private void drawCards(List<Player> players, int assignedPlayerNum) {
+        for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
+            tint(30,255,10);
+            image(cardImages[valueMask.apply(players.get(assignedPlayerNum).hand().get(0))],20+i*60,400);
+        }
         text(message, 150, 500);
     }
 
