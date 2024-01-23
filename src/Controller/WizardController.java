@@ -12,15 +12,12 @@ public class WizardController implements IWizardController{
 
     // Move to model
     ArrayList<IWizardModel> modelHistory = new ArrayList<>();
-
     public WizardController() {
         this.gameState = GameState.START;
     }
-
     public void setModel(IWizardModel model) {
         this.model = model;
     }
-
     public void setView(IWizardView view) {
         this.view = view;
     }
@@ -30,31 +27,36 @@ public class WizardController implements IWizardController{
         switch (gameState) {
             case START:
                 view.drawStartScreen();
+                if (!model.players().isEmpty() && !model.players().get(0).hand().isEmpty()) gameState = GameState.CALLING_TRICKS;
                 break;
             case CALLING_TRICKS:
                 if (model.allPlayersCalledTricks()) gameState = GameState.PLAYING_TRICK;
                 view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
                 break;
             case PLAYING_TRICK:
-                if (model.isGameOver()) gameState = GameState.GAME_OVER;
                 if (model.isTrickOver()) {
                     model.endTrick();
                     gameState = GameState.CALLING_TRICKS;
+                    view.displayText("");
                     view.displayText("Player " + model.winner() + " won this trick.");
                 }
                 if (model.isRoundOver()) {
                     model.endRound();
-                    if (model.isGameOver()) gameState = GameState.GAME_OVER;
+                    if (model.isGameOver()){
+                        gameState = GameState.GAME_OVER;
+                        view.displayText("");
+                    }
                     else {
                         model.dealCards();
                         gameState = GameState.CALLING_TRICKS;
+                        view.displayText("");
                         // TODO: Display the scores being updated, maybe store the points before model.endRound()?
                     }
                 }
                 view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
                 break;
             case GAME_OVER:
-                view.drawEndScreen();
+                view.drawEndScreen(model.getCurrentGameWinner());
                 break;
             default:
                 break;
@@ -64,8 +66,11 @@ public class WizardController implements IWizardController{
     @Override
     public void cardInput(int cardIndex) {
         if (gameState != GameState.PLAYING_TRICK) return; // use this later with and give feedback (view method) cardIndex >= 0 && assignedPlayerNum == model.getCurrentPlayerNum()
-        byte card = model.players().get(model.getCurrentPlayerNum()).hand().get(cardIndex);
-
+        byte card = model.players().get(model.getAssignedPlayerNum()).hand().get(cardIndex);
+        if (model.getAssignedPlayerNum() != model.getCurrentPlayerNum()) {
+            view.displayText("Not currently your turn to play a card");
+            return;
+        }
         switch (model.isLegalMove(card)) {
             case 0:
                 modelHistory.add(model);
@@ -90,9 +95,7 @@ public class WizardController implements IWizardController{
         switch (functionNum) {
             case 0: {
                 if (gameState == GameState.START) {
-                    //TODO: add isServer Stuff
                     model.dealCards();
-                    gameState = GameState.CALLING_TRICKS;
                 }
                 break;
             }

@@ -20,13 +20,4 @@ public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score
     public Player setTricksCalled(int amount) {return new Player(hand, amount, tricksWon, score, true);}
     public Player resetCalledTricks(){return new Player(hand, tricksCalled, tricksWon, score, false);}
 
-
-    // toString for Testing
-    public String toString() {
-        StringBuilder result = new StringBuilder("Player %d: \n");
-        hand.forEach(card -> result.append(WizardModel.cardToString(card)).append("\n"));
-        result.append("Tricks called: ").append(tricksCalled).append("\n").append("Tricks won: ").append(tricksWon).append("\n");
-        return result.toString();
-    }
-
 }

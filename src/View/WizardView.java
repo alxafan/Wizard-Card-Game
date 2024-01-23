@@ -42,12 +42,14 @@ public class WizardView extends PApplet implements IWizardView {
         tricksCallField.setLabel("")
                 .setPosition(150, 30)
                 .setSize(40, 18)
-                .setText("0");
+                .setText("0")
+                .hide();
 
 
         enterTricksCalled = cp5.addButton("Enter");
         enterTricksCalled.setPosition(200, 30)
-                .setSize(25, 18);
+                .setSize(25, 18)
+                .hide();
 
         enterTricksCalled.addListenerFor(ACTION_RELEASE, c -> {
             try {
@@ -73,6 +75,8 @@ public class WizardView extends PApplet implements IWizardView {
 
     @Override
     public void drawCallingTricksScreen(List<Player> players, int round, byte trump, int currentPlayerNum, int assignedPlayerNum) {
+        tricksCallField.show();
+        enterTricksCalled.show();
         background(0);
         textSize(16);
         StringBuilder result = new StringBuilder();
@@ -81,34 +85,40 @@ public class WizardView extends PApplet implements IWizardView {
         text(result.toString(), 10, 20);
         text(players.get(assignedPlayerNum).toString().formatted(assignedPlayerNum), 300, 20);
         drawCards(players, assignedPlayerNum);
-
     }
 
     @Override
     public void drawPlayingScreen(List<Player> players, List<Byte> trick, byte trump, int round, int currentPlayerNum, int assignedPlayerNum) {
+        tricksCallField.hide();
+        enterTricksCalled.hide();
         background(0);
         textSize(16);
-        cardsInHand = players.get(currentPlayerNum).hand().size();
+        cardsInHand = players.get(assignedPlayerNum).hand().size();
 
-        // Only show assigned player's hand later
 
         StringBuilder result = new StringBuilder();
         result.append("Round: ").append(round).append("\n");
         result.append("Trump card: ").append(cardToString(trump)).append("\n");
         result.append("Cards in trick: ").append("\n");
         trick.forEach(c -> result.append(cardToString(c)).append("\n"));
-        result.append("\n").append("Players hands: ").append("\n").append("\n");
-        players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
-
-        text(players.get(assignedPlayerNum).toString().formatted(currentPlayerNum), 300, 20);
-        text("Selected card: " + cardToString(players.get(currentPlayerNum).hand().get(selectedCardIndex)), 10, 550);
+        text(result.toString(),50,20);
+        if (cardsInHand <= 0) return;
+        text("Selected card: " + cardToString(players.get(assignedPlayerNum).hand().get(selectedCardIndex)), 10, 550);
         drawCards(players, assignedPlayerNum);
     }
 
+    //TODO: add position
     private void drawCards(List<Player> players, int assignedPlayerNum) {
         for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
-            tint(30,255,10);
-            image(cardImages[valueMask.apply(players.get(assignedPlayerNum).hand().get(0))],20+i*60,400);
+            byte card = players.get(assignedPlayerNum).hand().get(i);
+            switch (colorMask.apply(card)) {
+                case (byte) 0b00000000 -> tint(255,0,0);
+                case (byte) 0b01000000 -> tint(0,255,0);
+                case (byte) 0b10000000 -> tint(0,0,255);
+                case (byte) 0b11000000 -> tint(255,255,0);
+                default -> tint(255);
+            }
+            image(cardImages[valueMask.apply(card)],20+i*60,400);
         }
         text(message, 150, 500);
     }
@@ -119,8 +129,15 @@ public class WizardView extends PApplet implements IWizardView {
     }
 
     @Override
-    public void drawEndScreen() {
+    public void drawEndScreen(List<Integer> currentGameWinner) {
         background(255);
+        StringBuilder result = new StringBuilder();
+        result.append("Players: ");
+        currentGameWinner.forEach(w -> {
+            result.append(w).append(", ");
+        });
+        result.append("won the game");
+        //TODO: add scores or whatever
     }
 
     @Override

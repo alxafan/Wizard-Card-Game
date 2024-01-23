@@ -132,7 +132,6 @@ public class ClientServerThread extends Thread implements IWizardModel{
                 if(!modelTest.equals(model)) System.out.println("new Model received");
                 model = modelTest;
             }
-
         } catch (IOException e) {
             // Connection lost end game prematurely
         } catch (ClassNotFoundException e) {throw new RuntimeException(e);} // This should not happen, since all classes are known in both server and client.
@@ -143,7 +142,7 @@ public class ClientServerThread extends Thread implements IWizardModel{
             model = model.newGame();
             for (int i = 0; i <= sockets.size(); i++) model = model.addPlayer();
             System.out.println("test");
-            serverOOS.forEach(oos -> send(oos, model.newGame()));
+            serverOOS.forEach(oos -> send(oos, model));
         }
     }
     public void dealCards() {
@@ -163,8 +162,18 @@ public class ClientServerThread extends Thread implements IWizardModel{
         if (isServer()) serverOOS.forEach(oos -> send(oos, model));
         else send(oos, model);
     }
-    public void endTrick() {if (isServer()) serverOOS.forEach(oos -> send(oos, model.endTrick()));}
-    public void endRound() {if (isServer()) serverOOS.forEach(oos -> send(oos, model.endRound()));}
+    public void endTrick() {
+        if (isServer()) {
+            model = model.endTrick();
+            serverOOS.forEach(oos -> send(oos, model));
+        }
+    }
+    public void endRound() {
+        if (isServer()) {
+            model = model.endRound();
+            serverOOS.forEach(oos -> send(oos, model));
+        }
+    }
     public int isLegalTrickCall(int tricksCalled, int playerNum) {return model.isLegalTrickCall(tricksCalled, playerNum);}
     public int isLegalMove(byte card) {return model.isLegalMove(card);}
     public boolean isGameOver() {return model.isGameOver();}
