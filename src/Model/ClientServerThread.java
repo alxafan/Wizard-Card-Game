@@ -15,12 +15,12 @@ public class ClientServerThread extends Thread implements IWizardModel{
     private ArrayList<Socket> sockets = new ArrayList<>();
     private WizardModel model;
     private ObjectOutputStream oos;
+    private ObjectInputStream ois;
     private ArrayList<ObjectOutputStream> serverOOS = new ArrayList<>();
     private ArrayList<ObjectInputStream> serverOIS = new ArrayList<>();
     private int assignedPlayerNumber = -1;
     private int inputCheckCounter;
-
-
+    private boolean gameEnded;
     private ClientServerThread(String ip, int port, int playerCount) {
         this.ip = ip;
         this.port = port;
@@ -38,7 +38,6 @@ public class ClientServerThread extends Thread implements IWizardModel{
         cst.connect();
         return cst;
     }
-
     /**
      * Creates a new connection either as a client or as a server.
      */
@@ -48,20 +47,17 @@ public class ClientServerThread extends Thread implements IWizardModel{
             // Try to connect as a client first
             sockets.add(sockets.size(), new Socket(ip, port));
             oos = new ObjectOutputStream(sockets.get(sockets.size()-1).getOutputStream());
-            System.out.println("This is a client");
         } catch (IOException e) {
             // Create a server if connection is not possible
             try {
                 serversocket = new ServerSocket(port);
                 sockets.clear();
-                System.out.println("This is a server");
             } catch (IOException e2) {
                 e2.printStackTrace();
             }
         }
     }
-
-    public synchronized void send(ObjectOutputStream oos, Object obj) {
+    private synchronized void send(ObjectOutputStream oos, Object obj) {
         try {
             if (oos != null) {
                 oos.reset();
@@ -69,15 +65,12 @@ public class ClientServerThread extends Thread implements IWizardModel{
             }
         } catch (IOException e) {}// if something went wrong, send nothing
     }
-
+    //TODO: Decide if to keep
     /**
      * Checks if this thread is a server. Is used in the model to decide what it should do.
      * @return true if the game is a server, false otherwise.
      */
-    public boolean isServer() {
-        return serversocket != null;
-    }
-
+    public boolean isServer() {return serversocket != null;}
     @Override
     public void run() {
         try {
@@ -91,28 +84,25 @@ public class ClientServerThread extends Thread implements IWizardModel{
                         serverOOS.get(i).write(i+1);
                         serverOIS.add(i, new ObjectInputStream(sockets.get(i).getInputStream()));
                     }
-
                     newGame();
                     while (true) {
                         try {
-                            sockets.get(inputCheckCounter).setSoTimeout(100);
+                            sockets.get(inputCheckCounter).setSoTimeout(50);
                             model = (WizardModel) serverOIS.get(inputCheckCounter).readObject();
                             serverOOS.forEach(ou -> send(ou, model));
                         } catch (SocketTimeoutException e) { inputCheckCounter = (inputCheckCounter+1)%playerCount;}
                     }
-                } catch (IOException e) {throw new RuntimeException(e);}
+                } catch (IOException e) {endConnection();}
             }
-
-            ObjectInputStream ois = new ObjectInputStream(sockets.get(0).getInputStream());
+            ois = new ObjectInputStream(sockets.get(0).getInputStream());
             assignedPlayerNumber = ois.read();
-
             while (true) {
-                model = (WizardModel) ois.readObject();;
+                model = (WizardModel) ois.readObject();
             }
-        } catch (IOException e) {
+        } catch (IOException e) { endConnection();
         } catch (ClassNotFoundException e) {throw new RuntimeException(e);} // This should not happen, since all classes are known in both server and client.
     }
-
+    //TODO: decide on private or not
     public void newGame() {
         if (isServer()) {
             model = model.newGame();
@@ -157,7 +147,7 @@ public class ClientServerThread extends Thread implements IWizardModel{
     public boolean isGameOver() {return model.isGameOver();}
     public boolean isTrickOver() {return model.isTrickOver();}
     public boolean isRoundOver() {return model.isRoundOver();}
-    public boolean allPlayersCalledTricks() {return model.allPlayersCalledTricks();}
+    public boolean allPlayersCalledTricks() {return model.haveAllPlayersCalledTricks();}
     public List<Player> players() {return model.players();}
     public List<Byte> trick() {return model.trick();}
     public byte trump() {return model.trump();}
@@ -167,5 +157,21 @@ public class ClientServerThread extends Thread implements IWizardModel{
     public int getCurrentTrickCaller(){return model.getCurrentTrickCaller();}
     public List<Integer> getCurrentGameWinner() {return model.getCurrentGameWinner();}
     public int getAssignedPlayerNum() {return assignedPlayerNumber;}
+    public boolean hasGameEnded() {return gameEnded;}
+    void endConnection() {
+        try {
+            gameEnded = true;
+            if (isServer()) {
+                for(ObjectOutputStream s : serverOOS) s.close();
+                for(ObjectInputStream s : serverOIS) s.close();
+                for(Socket s : sockets) s.close();
+                serversocket.close();
+            } else {
+                oos.close();
+                ois.close();
+                for(Socket s : sockets) s.close();
+            }
+        } catch (IOException e) {}
+    }
 }
 

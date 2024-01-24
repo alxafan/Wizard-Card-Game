@@ -15,7 +15,7 @@ import static controlP5.ControlP5Constants.ACTION_RELEASE;
 public class WizardView extends PApplet implements IWizardView {
     private IWizardController controller;
     private int selectedCardIndex = 0;
-    private int cardsInHand = 0;
+    private int cardsInHand = 1;
     private String message = "";
     private final PImage[] cardImages = new PImage[15];
 
@@ -88,7 +88,7 @@ public class WizardView extends PApplet implements IWizardView {
 
         for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
             byte card = players.get(assignedPlayerNum).hand().get(i);
-            drawCards(card,20+i*65,400);
+            drawCards(card,20+i*42,400);
         }
 
         text(message, 150, 370);
@@ -96,6 +96,7 @@ public class WizardView extends PApplet implements IWizardView {
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             if (!player.hasCalledTrick()) fill(200,30,20);
+            else fill(255);
             text("Player " + (i+1) + " score: " + player.score()
                             + "   called-tricks: " + player.tricksCalled()
                     , 550,50+20*i);
@@ -129,22 +130,29 @@ public class WizardView extends PApplet implements IWizardView {
         }
 
         if (cardsInHand <= 0) return;
-        fill(255);
-        rect(20+selectedCardIndex*70-5,400-5,70,100);
-        noFill();
+
         for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
+            if (i == selectedCardIndex) continue;;
             byte card = players.get(assignedPlayerNum).hand().get(i);
-            drawCards(card,20+i*70,400);
+            drawCards(card,20+i*42,400);
         }
+        fill(255);
+        rect(23+selectedCardIndex*42-5,400-2,63,93);
+        noFill();
+        drawCards(players.get(assignedPlayerNum).hand().get(selectedCardIndex),20+selectedCardIndex*42,400);
         text(message, 150, 370);
     }
     @Override
     public void drawEndScreen(List<Integer> currentGameWinner, List<Player> players) {
-        background(255);
+        tricksCallField.hide();
+        enterTricksCalled.hide();
+        background(0);
         StringBuilder result = new StringBuilder();
         result.append("Players: ");
         currentGameWinner.forEach(w -> result.append(w).append(", "));
         result.append("won with the score: " + players.get(currentGameWinner.get(0)).score());
+        textSize(40);
+        text(result.toString(), 180,260);
     }
 
     //TODO: add position
@@ -174,6 +182,8 @@ public class WizardView extends PApplet implements IWizardView {
         }
         if(event.getKeyCode() == LEFT) {
             selectedCardIndex = Math.abs(--selectedCardIndex % cardsInHand);
+            //TODO: fix if there is time
+            // selectedCardIndex = (selectedCardIndex-1) % cardsInHand < 0? selectedCardIndex-1+cardsInHand:selectedCardIndex-1
         }
         // TODO: Maybe add a method that increases the selected card index by 1, so that when an input fails, the index doesn't change
         if(event.getKeyCode() == ENTER) {

@@ -85,22 +85,22 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
 
         p = replaceAtIndex(p,winning,p.get(winning).setTricksWon(p.get(winning).tricksWon()+1));
         // clears the trick by creating a new empty list
-        return new WizardModel(List.copyOf(p), List.of(), round, winning, (byte) 0, totalTricksCalled, winning);
+        return new WizardModel(List.copyOf(p), List.of(), round, winning, trump, totalTricksCalled, winning);
     }
     public WizardModel endRound() {
         assert isRoundOver(): "Not all players have played all their cards yet, or the trick still needs to be ended.";
         List<Player> p = new ArrayList<>(players);
         p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).resetTricks());
         // clears the trick by creating a new empty list
-        return new WizardModel(List.copyOf(p), List.of(), round+1, round%players.size(), (byte) 0, totalTricksCalled, trickWinner);
+        return new WizardModel(List.copyOf(p), List.of(), round+1, round%players.size(), (byte) 0, 0, trickWinner);
     }
-    WizardModel addPlayer() {
+    public WizardModel addPlayer() {
         List<Player> p = new ArrayList<>(players);
         p.add(new Player());
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled, trickWinner);
     }
     public WizardModel setTricksCalled(int tricksCalled, int playerNum) {
-        assert !allPlayersCalledTricks(): "All players have called their tricks";
+        assert !haveAllPlayersCalledTricks(): "All players have called their tricks";
         assert ((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size() == playerNum): "Not currently this players turn to call a trick";
         assert playerNum >= 0 && playerNum < players.size(): "Player index out of bounds.";
         assert tricksCalled >= 0 && tricksCalled <= round: "Can't call a negative amount of tricks or more tricks than there are in the round.";
@@ -117,9 +117,9 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
      * @return the most up-to-date Model
      */
     public int isLegalTrickCall(int tricksCalled, int playerNum) {
-        if (allPlayersCalledTricks()) return 1;
-        if (! ((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size() == playerNum)) return 2;
-        if (playerNum < 0 || playerNum >= players.size()) return 3;
+        if (haveAllPlayersCalledTricks()) return 1;
+        if (playerNum < 0 || playerNum >= players.size()) return 2;
+        if (! (((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size()) == playerNum)) return 3;
         if (tricksCalled < 0 || tricksCalled > round) return 4;
         if (players.stream().filter(Player::hasCalledTrick).count() == players.size()-1 && totalTricksCalled+tricksCalled == round) return 5;
         return 0;
@@ -144,10 +144,10 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
 
         return 0;
     }
-    public boolean isGameOver() {return round == (60/players.size())+1;}
+    public boolean isGameOver() {return round == 60/(players.size()+1);}
     public boolean isTrickOver() {return trick.size() == players.size();}
     public boolean isRoundOver() {return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();}
-    public boolean allPlayersCalledTricks() {return players.stream().allMatch(Player::hasCalledTrick);}
+    public boolean haveAllPlayersCalledTricks() {return players.stream().allMatch(Player::hasCalledTrick);}
     public int getCurrentPlayerNum() {return (trick.size()+startingPlayer)%players.size();}
     public int getCurrentTrickCaller() {return (int) (startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size();}
     public List<Integer> getCurrentGameWinner(){

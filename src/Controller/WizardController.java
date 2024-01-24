@@ -24,6 +24,8 @@ public class WizardController implements IWizardController{
 
     @Override
     public void nextFrame() {
+        //TODO: move checks here, put "your turn to do x,y" here
+        if (model.hasGameEnded()) gameState = GameState.GAME_OVER;
         switch (gameState) {
             case START:
                 // in case the client takes a bit of time to connect
@@ -137,10 +139,10 @@ public class WizardController implements IWizardController{
                 view.displayText("All players have called their tricks");
                 break;
             case 2:
-                view.displayText("Not currently this players turn to call a trick");
+                view.displayText("Player index out of bounds.");
                 break;
             case 3:
-                view.displayText("Player index out of bounds.");
+                view.displayText("Not currently this players turn to call a trick");
                 break;
             case 4:
                 view.displayText("Can't call a negative amount of tricks or more tricks than there are in the round.");

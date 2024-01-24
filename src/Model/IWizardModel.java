@@ -25,5 +25,5 @@ public interface IWizardModel {
     int getAssignedPlayerNum();
     int round();
     int winner();
-
+    boolean hasGameEnded();
 }
