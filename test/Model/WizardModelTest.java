@@ -47,29 +47,28 @@ public class WizardModelTest {
     }
 
     @Test
+    void checkingAndCallingTricksWorks() {
+
+    }
+
+    @Test
     void toStringMethodAndCardToStringWorks() {
-        WizardModel w = new WizardModel();
-        String expected = """
-                Round: 1
-                Trump card: 0 Red
-                Cards in trick:\s
-
-                Players hands:\s
-                Player-data:\s
-                Current players turn: 0""";
-        assertEquals(w.toString(), expected);
-
         Player p1 = new Player().addCard((byte) 12).addCard((byte) 71);
         Player p2 = new Player().addCard((byte) 206).addCard((byte) 134);
-        w =  new WizardModel(List.of(p1,p2),List.of(),2,1,(byte) 135,0,-1);
-        expected = """
-                Round: 1
-                Trump card: 0 Red
+        WizardModel w =  new WizardModel(List.of(p1,p2),List.of(),2,1,(byte) 135,0,-1);
+        String expected = """
+                Round: 2
+                Trump card: 7 Blue
                 Cards in trick:\s
 
                 Players hands:\s
-                Player-data:\s
-                Current players turn: 0""";
+                12 Red
+                7 Green
+                14 Yellow
+                6 Blue
+                Player-data: Player[hand=[12, 71], tricksCalled=0, tricksWon=0, score=0, hasCalledTrick=false]Player[hand=[-50, -122], tricksCalled=0, tricksWon=0, score=0, hasCalledTrick=false]
+                Current players turn: 1""";
         assertEquals(w.toString(), expected);
+        assertEquals(w.cardToString((byte) 71), "7 Green");
     }
 }

@@ -167,8 +167,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
             case (byte) 0b01000000 -> "Green";
             case (byte) 0b10000000 -> "Blue";
             case (byte) 0b11000000 -> "Yellow";
-            default -> "";
-        };
+            default -> "";};
     }
     
     public String toString() {
