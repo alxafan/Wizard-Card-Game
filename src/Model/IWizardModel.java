@@ -2,12 +2,14 @@ package Model;
 
 import java.util.List;
 
+/**
+ * the interface used by the controller to receive information from the model
+ */
 public interface IWizardModel {
     void newGame();
     void dealCards();
     void setTricksCalled(int tricksCalled, int playerNum);
     void playCard(byte card);
-//    IWizardModel undoPlayCard();
     void endTrick();
     void endRound();
     int isLegalTrickCall(int tricksCalled, int playerNum);

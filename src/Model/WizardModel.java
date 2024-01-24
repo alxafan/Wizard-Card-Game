@@ -1,37 +1,31 @@
 package Model;
 
-/* Jshell Testing:
-WizardModel w = new WizardModel();
-for (int i = 0; i < 4; i++) w = w.addPlayer(new Player());
-System.out.println(w = w.dealCards());
-System.out.println(w = w.playCard(w.players.get(0).hand.get(0)));
-System.out.println(w = w.playCard(w.players.get(1).hand.get(0)));
-System.out.println(w = w.playCard(w.players.get(2).hand.get(0)));
-System.out.println(w.endRound()); // Änderung wird nicht gespeichert
-System.out.println(w = w.playCard(w.players.get(3).hand.get(0)));
-System.out.println(w.undoPlayCard()); // Änderung wird nicht gespeichert
-System.out.println(w = w.endTrick());
-System.out.println(w = w.endRound());
-System.out.println(w = w.dealCards());
- */
-
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.*;
 
 /**
- * The main model class. Handles the game's logic and stores the relevant data.
+ * Record handling the storage and processing of game data and logic.
+ * <p></p>
  * Any time something is changed about the model, it should be replaced by a new one wherever it is used,
- * as all fields are final. This can be augmented with an AI, to make it a single player game
- *
- * @param players
- * @param trick
- * @param round
- * @param startingPlayer
- * @param trump
- * @param totalTricksCalled
- * @param trickWinner       is always -1, unless a trick winner was determined recently (endTrick/endRound)
+ * as all fields are immutable and a new model is created with moves such as playCard()
+ * <p></p>
+ * Cards are stored as bytes with the highest 2 bits representing the color, the next ones certain flags
+ * and the last 4 the card value
+ *<p></p>
+ * Use examples in ClientServerThread:
+ * <p></p>
+ * "model = model.dealCards()" to deal out cards to the players.
+ * <p></p>
+ * "model.isRoundOver()" to see if the round is over (task from the controller)
+ * @param players List of a record, which stores information relevant to each Player, see more under <a href="src.Model.Player">Player</a>.
+ * @param trick List of the played cards in the current trick
+ * @param round current round
+ * @param startingPlayer determines the first player to play a card in the current trick
+ * @param trump trump card this round
+ * @param totalTricksCalled total amount of Tricks called this round
+ * @param trickWinner is always -1, unless a trick winner was determined recently through endTrick
  */
 public record WizardModel(List<Player> players, List<Byte> trick, int round, int startingPlayer, byte trump, int totalTricksCalled, int trickWinner) implements Serializable {
 
@@ -40,11 +34,12 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
     private static final byte wizard = 0b00001110;
     private static final byte fool = 0b00000000;
 
-    public WizardModel() {this(List.of(), List.of(), 1, 0, (byte) 0, 0, -1);}
+    WizardModel() {this(List.of(), List.of(), 1, 0, (byte) 0, 0, -1);}
 
-    public WizardModel newGame() {return new WizardModel();}
+    // use this to reset a game in the future
+    WizardModel newGame() {return new WizardModel();}
     /**
-     * Method that deals out cards to the players.
+     * Deals out cards to the players and determines a trump card
      */
     public WizardModel dealCards() {
         ArrayList<Byte> deck = new ArrayList<>(List.of((byte) 0,(byte) 1,(byte) 2,(byte) 3,(byte) 4,(byte) 5,(byte) 6,(byte) 7,(byte) 8,(byte) 9,(byte) 10,(byte) 11,(byte) 12,(byte) 13,(byte) 14,(byte) 64,(byte) 65,(byte) 66,(byte) 67,(byte) 68,(byte) 69,(byte) 70,(byte) 71,(byte) 72,(byte) 73,(byte) 74,(byte) 75,(byte) 76,(byte) 77,(byte) 78,(byte) 128,(byte) 129,(byte) 130,(byte) 131,(byte) 132,(byte) 133,(byte) 134,(byte) 135,(byte) 136,(byte) 137,(byte) 138,(byte) 139,(byte) 140,(byte) 141,(byte) 142,(byte) 192,(byte) 193,(byte) 194,(byte) 195,(byte) 196,(byte) 197,(byte) 198,(byte) 199,(byte) 200,(byte) 201,(byte) 202,(byte) 203,(byte) 204,(byte) 205,(byte) 206));
@@ -52,16 +47,37 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         for (int i = 0; i < round; i++) p.replaceAll(player -> player.addCard(deck.remove((int) (Math.random()*deck.size()))));
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, deck.remove((int) (Math.random()*deck.size())), totalTricksCalled, trickWinner);
     }
+
     /**
-     * Method which plays a card into the trick, while making sure that no wizard rules are broken. Keep in mind that this only works if the controller makes sure that the player whose turn it is plays
-     * @param card the card to be played
+     * Sets an amount of tricks called for a player
+     * <p></p>
+     * Does not check for legitimacy of the Call unless assertions are enabled
+     * @param tricksCalled amount of tricks the player predicts he will win this round
+     * @param playerNum player's number
+     * @return updated model
+     */
+    public WizardModel setTricksCalled(int tricksCalled, int playerNum) {
+        assert !haveAllPlayersCalledTricks(): "All players have called their tricks";
+        assert ((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size() == playerNum): "Not currently this players turn to call a trick";
+        assert playerNum >= 0 && playerNum < players.size(): "Player index out of bounds.";
+        assert tricksCalled >= 0 && tricksCalled <= round: "Can't call a negative amount of tricks or more tricks than there are in the round.";
+        assert !(players.stream().filter(Player::hasCalledTrick).count() == players.size()-1 && totalTricksCalled+tricksCalled == round): "Total amount of tricks can't be greater than the amount of tricks in the round.";
+
+        List<Player> p = new ArrayList<>(players);
+        p = replaceAtIndex(p,playerNum, p.get(playerNum).setTricksCalled(tricksCalled));
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled + tricksCalled, trickWinner);
+    }
+    /**
+     * Plays a card into the trick
+     * <p></p>
+     * Does not check for legitimacy of the move, unless assertions are enabled
+     * @param card card to be played
+     * @return updated model
      */
     public WizardModel playCard(byte card) {
         int currentPlayer = (startingPlayer + trick.size()) % players.size();
         byte firstNonFoolCard = trick.stream().filter(c -> valueMask.apply(c) != fool).findFirst().orElse(card);
-
-        //TODO: change asserts
-        assert isLegalMove(card) == 0;
+        assert isLegalMove(card) == 0: "Can't play this card right now";
 
         List<Player> p = new ArrayList<>(players);
         List<Byte> t = new ArrayList<>(trick);
@@ -74,6 +90,13 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         t.add(card);
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled, trickWinner);
     }
+
+    /**
+     * Ends the current trick and determines a trick-winner, updates won-tricks, starting-player and resets the trick
+     * <p></p>
+     * Does not check for legitimacy of action, unless assertions are enabled.
+     * @return updated model
+     */
     public WizardModel endTrick() {
         assert isTrickOver(): "Not all players have played a card yet.";
         List<Player> p = new ArrayList<>(players);
@@ -87,6 +110,16 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         // clears the trick by creating a new empty list
         return new WizardModel(List.copyOf(p), List.of(), round, winning, trump, totalTricksCalled, winning);
     }
+
+    /**
+     * Ends the current round, calculates and updates the player scores, increases the round number,
+     * resets the total-tricks-called and determines the startingPlayer
+     * <p></p>
+     * See the game rules for score calculation
+     * <p></p>
+     * Does not check for legitimacy of action, unless assertions are enabled.
+     * @return updated model
+     */
     public WizardModel endRound() {
         assert isRoundOver(): "Not all players have played all their cards yet, or the trick still needs to be ended.";
         List<Player> p = new ArrayList<>(players);
@@ -94,29 +127,24 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         // clears the trick by creating a new empty list
         return new WizardModel(List.copyOf(p), List.of(), round+1, round%players.size(), (byte) 0, 0, trickWinner);
     }
+
+    /**
+     * Adds a new player to the game
+     * @return updated model
+     */
     public WizardModel addPlayer() {
         List<Player> p = new ArrayList<>(players);
         p.add(new Player());
         return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled, trickWinner);
     }
-    public WizardModel setTricksCalled(int tricksCalled, int playerNum) {
-        assert !haveAllPlayersCalledTricks(): "All players have called their tricks";
-        assert ((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size() == playerNum): "Not currently this players turn to call a trick";
-        assert playerNum >= 0 && playerNum < players.size(): "Player index out of bounds.";
-        assert tricksCalled >= 0 && tricksCalled <= round: "Can't call a negative amount of tricks or more tricks than there are in the round.";
-        assert !(players.stream().filter(Player::hasCalledTrick).count() == players.size()-1 && totalTricksCalled+tricksCalled == round): "Total amount of tricks can't be greater than the amount of tricks in the round.";
-
-        List<Player> p = new ArrayList<>(players);
-        p = replaceAtIndex(p,playerNum, p.get(playerNum).setTricksCalled(tricksCalled));
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled + tricksCalled, trickWinner);
-    }
 
     /**
-     * method that returns the most up-to-date Model to the controller
-     * this method should get called before any checks in the controller
-     * @return the most up-to-date Model
+     * method that checks if a trick-call is legal or not.
+     * @param tricksCalled amount of tricks predicted by player
+     * @param playerNum player's number
+     * @return a number besides 0 represents the move being illegal, this can be decoded later on
      */
-    public int isLegalTrickCall(int tricksCalled, int playerNum) {
+    int isLegalTrickCall(int tricksCalled, int playerNum) {
         if (haveAllPlayersCalledTricks()) return 1;
         if (playerNum < 0 || playerNum >= players.size()) return 2;
         if (! (((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size()) == playerNum)) return 3;
@@ -127,9 +155,9 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
     /**
      * Method to check whether a given card can be played or not
      * @param card desired card to be checked
-     * @return a non 0 Integer represents the Move being illegal, this can be decoded later on
+     * @return a number besides 0 represents the move being illegal, this can be decoded later on
      */
-    public int isLegalMove(byte card) {
+    int isLegalMove(byte card) {
         int currentPlayer = (startingPlayer + trick.size()) % players.size();
         byte firstNonFoolCard = trick.stream().filter(c -> valueMask.apply(c) != fool).findFirst().orElse(card);
 
@@ -144,16 +172,31 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
 
         return 0;
     }
-    public boolean isGameOver() {return round == 60/(players.size()+1);}
-    public boolean isTrickOver() {return trick.size() == players.size();}
-    public boolean isRoundOver() {return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();}
-    public boolean haveAllPlayersCalledTricks() {return players.stream().allMatch(Player::hasCalledTrick);}
-    public int getCurrentPlayerNum() {return (trick.size()+startingPlayer)%players.size();}
+
+    /**
+     * determines the current player to call a trick
+     * @return player's number to call a trick
+     */
     public int getCurrentTrickCaller() {return (int) (startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size();}
+
+    /**
+     * determines player(s) with the highest score
+     * @return List with the numbers of winning players
+     */
     public List<Integer> getCurrentGameWinner(){
         int winningScore = players.stream().map(Player::score).reduce(Math::max).orElse(-1);
         return IntStream.range(0, players.size()).filter(i -> players.get(i).score() == winningScore).boxed().collect(Collectors.toList());
     }
+
+    /**
+     * determines if the game has reached an end
+     * @return true if the game has ended, otherwise false
+     */
+    public boolean isGameOver() {return round == 60/(players.size()+1);}
+    boolean isTrickOver() {return trick.size() == players.size();}
+    boolean isRoundOver() {return players.stream().allMatch(player -> player.hand().isEmpty()) && trick.isEmpty();}
+    boolean haveAllPlayersCalledTricks() {return players.stream().allMatch(Player::hasCalledTrick);}
+    int getCurrentPlayerNum() {return (trick.size()+startingPlayer)%players.size();}
 
     // function to replace an element in a list at a given index, only way to keep the list immutable
     private <T> List<T> replaceAtIndex(List<T> list, int index, T element) {
@@ -162,14 +205,18 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         return List.copyOf(l);
     }
     String cardToString(byte card) {
-        return valueMask.apply(card)%15 + " " + switch (colorMask.apply(card)) {
+        return (card & 0b00001111)%15 + " " + switch (colorMask.apply(card)) {
             case (byte) 0b00000000 -> "Red";
             case (byte) 0b01000000 -> "Green";
             case (byte) 0b10000000 -> "Blue";
             case (byte) 0b11000000 -> "Yellow";
             default -> "";};
     }
-    
+
+    /**
+     * packs all data relevant to the current game's state into a String
+     * @return String specified above
+     */
     public String toString() {
         StringBuilder result = new StringBuilder();
         result.append("Round: ").append(round).append("\n").append("Trump card: ").append(cardToString(trump)).append("\n").append("Cards in trick: ").append("\n");

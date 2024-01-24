@@ -5,23 +5,40 @@ import View.IWizardView;
 
 import java.util.ArrayList;
 
+/**
+ * Class to transfer and control inputs from the view and to determine the game's state
+ * possible gameStates are START, CALLING_TRICKS, PLAYING_TRICKS and GAME_OVER
+ * Use example in view: "controller.cardInput(cardIndex)" to process a user input from the view
+ */
 public class WizardController implements IWizardController{
-    GameState gameState;
+    GameState gameState = GameState.START;
     IWizardModel model;
     IWizardView view;
 
     // Move to model
     ArrayList<IWizardModel> modelHistory = new ArrayList<>();
-    public WizardController() {
-        this.gameState = GameState.START;
-    }
+
+    /**
+     * Sets the model to which inputs are given
+     * @param model model in question
+     */
     public void setModel(IWizardModel model) {
         this.model = model;
     }
+    /**
+     * Sets the view to which commands are given
+     * @param view view in question
+     */
     public void setView(IWizardView view) {
         this.view = view;
     }
 
+    /**
+     * The logic method of the controller. Determines what gameState the model is currently in
+     * and tells the view to draw the according screens.
+     * <p></p>
+     * gets called every frame by the view
+     */
     @Override
     public void nextFrame() {
         //TODO: move checks here, put "your turn to do x,y" here
@@ -68,13 +85,17 @@ public class WizardController implements IWizardController{
                 view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
                 break;
             case GAME_OVER:
-                view.drawEndScreen(model.getCurrentGameWinner(), model.players());
+                view.drawEndScreen(model.getCurrentGameWinner(), model.players().get(model.getCurrentGameWinner().get(0)).score());
                 break;
             default:
                 break;
         }
     }
 
+    /**
+     * Sends the model a card-input, if the chosen card is allowed to be played, otherwise gives feedback to the view on why it is not.
+     * @param cardIndex index of a card in the assigned player's hand
+     */
     @Override
     public void cardInput(int cardIndex) {
         if (gameState != GameState.PLAYING_TRICK) {
@@ -105,6 +126,11 @@ public class WizardController implements IWizardController{
                 throw new IllegalStateException("Unexpected error-value: " + model.isLegalMove(card));
         }
     }
+
+    /**
+     * Sends the model a command, if the gameState allows for it.
+     * @param functionNum number determining which function will be called
+     */
     @Override
     public void functionInput(int functionNum) {
         switch (functionNum) {
@@ -128,6 +154,10 @@ public class WizardController implements IWizardController{
         }
     }
 
+    /**
+     * Sends the model a trick-call-input, if the input is allowed to be made, otherwise gives feedback to the view on why it is not.
+     * @param amount trick amount predicted by the assignedPlayer
+     */
     @Override
     public void setTrickAmount(int amount) {
         switch (model.isLegalTrickCall(amount, model.getAssignedPlayerNum())) {

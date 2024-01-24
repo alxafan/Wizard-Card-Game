@@ -3,6 +3,16 @@ package Model;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Record storing all data and methods related to players
+ * <p></p>
+ * Record is immutable, therefore some methods for simpler usage in WizardModel are given
+ * @param hand player's held cards
+ * @param tricksCalled amount of tricks called in a given round
+ * @param tricksWon amount of tricks won in a given round
+ * @param score player's current score
+ * @param hasCalledTrick boolean to store trick-called state
+ */
 public record Player(List<Byte> hand, int tricksCalled, int tricksWon, int score, boolean hasCalledTrick) implements Serializable {
     Player() {this(List.of(), 0, 0, 0, false);}
     Player addCard(byte card) {

@@ -12,6 +12,11 @@ import java.util.function.UnaryOperator;
 
 import static controlP5.ControlP5Constants.ACTION_RELEASE;
 
+/**
+ * Class to display the game to the user, receive and transfer inputs from the user to the controller.
+ * <p></p>
+ * Use example in controller: "view.drawStartScreen(0)" to display the start screen
+ */
 public class WizardView extends PApplet implements IWizardView {
     private IWizardController controller;
     private int selectedCardIndex = 0;
@@ -23,15 +28,25 @@ public class WizardView extends PApplet implements IWizardView {
     private Textfield tricksCallField;
     private Button enterTricksCalled;
 
+    /**
+     * Sets the controller to which inputs are given
+     * @param controller model in question
+     */
     public void setController(IWizardController controller) {
         this.controller = controller;
     }
 
+    /**
+     * Sets the game's window-size
+     */
     @Override
     public void settings() {
         setSize(900, 600);
     }
 
+    /**
+     * preloads the images used by the game and creates the button and text field used.
+     */
     @Override
     public void setup() {
         for (int i = 0; i < cardImages.length; i++) cardImages[i] = loadImage("Card_%d.png".formatted(i));
@@ -62,11 +77,18 @@ public class WizardView extends PApplet implements IWizardView {
         );
     }
 
+    /**
+     * Gets called a certain amount of times per second and tells the controller to decide what to draw.
+     */
     @Override
     public void draw() {
         controller.nextFrame();
     }
 
+    /**
+     * Draws the start screen displaying the assigned player number
+     * @param assignedPlayerNum the assigned player number
+     */
     @Override
     public void drawStartScreen(int assignedPlayerNum) {
         // Screen displaying that players may join the game
@@ -75,6 +97,14 @@ public class WizardView extends PApplet implements IWizardView {
         text("You are Player " + (assignedPlayerNum+1), 310,260);
     }
 
+    /**
+     * Draws the trick calling screen and displays the button and text field
+     * @param players player data used to draw cards and score etc.
+     * @param round current round
+     * @param trump current trump card
+     * @param currentPlayerNum current player number
+     * @param assignedPlayerNum assigned player number
+     */
     @Override
     public void drawCallingTricksScreen(List<Player> players, int round, byte trump, int currentPlayerNum, int assignedPlayerNum) {
         tricksCallField.show();
@@ -103,7 +133,15 @@ public class WizardView extends PApplet implements IWizardView {
             noFill();
         }
     }
-
+    /**
+     * Draws the playing cards screen and hides the button and text field
+     * @param players player data used to draw cards and score etc.
+     * @param trick cards in the current trick
+     * @param round current round
+     * @param trump current trump card
+     * @param currentPlayerNum current player number
+     * @param assignedPlayerNum assigned player number
+     */
     @Override
     public void drawPlayingScreen(List<Player> players, List<Byte> trick, byte trump, int round, int currentPlayerNum, int assignedPlayerNum) {
         tricksCallField.hide();
@@ -142,20 +180,26 @@ public class WizardView extends PApplet implements IWizardView {
         drawCards(players.get(assignedPlayerNum).hand().get(selectedCardIndex),20+selectedCardIndex*42,400);
         text(message, 150, 370);
     }
+
+    /**
+     * Draws the end screen displaying the winner(s) and their score
+     *
+     * @param currentGameWinner List of the winner(s)
+     * @param score winning score
+     */
     @Override
-    public void drawEndScreen(List<Integer> currentGameWinner, List<Player> players) {
+    public void drawEndScreen(List<Integer> currentGameWinner, int score) {
         tricksCallField.hide();
         enterTricksCalled.hide();
         background(0);
         StringBuilder result = new StringBuilder();
         result.append("Players: ");
         currentGameWinner.forEach(w -> result.append(w).append(", "));
-        result.append("won with the score: " + players.get(currentGameWinner.get(0)).score());
+        result.append("won with the score: ").append(score);
         textSize(40);
         text(result.toString(), 180,260);
     }
 
-    //TODO: add position
     private void drawCards(byte card, float x, float y) {
         switch (colorMask.apply(card)) {
             case (byte) 0b00000000 -> tint(255,0,0);
@@ -168,11 +212,19 @@ public class WizardView extends PApplet implements IWizardView {
         noTint();
     }
 
+    /**
+     * saves a text message to be displayed on screen
+     * @param text text message
+     */
     @Override
     public void displayText(String text) {
         message = text;
     }
 
+    /**
+     * Records user inputs and transfers them to the controller
+     * @param event user input in question, here it is keys on the keyboard
+     */
     @Override
     public void keyPressed(KeyEvent event) {
         // Use switch here
@@ -194,12 +246,13 @@ public class WizardView extends PApplet implements IWizardView {
         if(event.getKey() == ' ') {
             controller.functionInput(0);
         }
+        /*
         if (event.getKeyCode() == BACKSPACE) {
             controller.functionInput(1);
         }
         if (event.getKey() == 'r') {
             controller.functionInput(2);
-        }
+        }*/
     }
 
     // bit-masks to decode the cards to be drawn

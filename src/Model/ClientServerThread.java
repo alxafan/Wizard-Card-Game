@@ -5,7 +5,10 @@ import java.net.*;
 import java.util.*;
 
 /**
- * This is a thread that can be either a client or a server.
+ * This is a thread that can be either a client or a server. Handles the networking for the game
+ * <p></p>
+ * stores the most up-to-date model for the controller to access,
+ * passes most methods through to model (kind of like an interface).
  */
 public class ClientServerThread extends Thread implements IWizardModel{
     private final String ip;
@@ -28,10 +31,10 @@ public class ClientServerThread extends Thread implements IWizardModel{
         model = new WizardModel();
     }
     /**
-     * Creates a new client if a server exists or becomes a server.
-     * @param ip    IP of the partner
+     * Creates a new client-thread and connects it, if a server exists, otherwise it creates a server-thread.
+     * @param ip    IP of the server if there is one
      * @param port  Port to establish the connection
-     * @return A new ClientServerThread-object.
+     * @return either a new server-object or a new client-object.
      */
     public static ClientServerThread newAny(String ip, int port, int playerCount) {
         var cst = new ClientServerThread(ip, port, playerCount);
@@ -65,12 +68,16 @@ public class ClientServerThread extends Thread implements IWizardModel{
             }
         } catch (IOException e) {}// if something went wrong, send nothing
     }
-    //TODO: Decide if to keep
     /**
-     * Checks if this thread is a server. Is used in the model to decide what it should do.
-     * @return true if the game is a server, false otherwise.
+     * Determines whether this thread is a server or not.
+     * @return true if this thread is a server, false otherwise.
      */
     public boolean isServer() {return serversocket != null;}
+
+    /**
+     * Handles the assigning of player numbers to the clients/server and the models being sent using ObjectInput-/OutputStreams.
+     * Whenever a model is sent by a client the server updates it for himself and sends it to all other clients.
+     */
     @Override
     public void run() {
         try {
@@ -102,7 +109,10 @@ public class ClientServerThread extends Thread implements IWizardModel{
         } catch (IOException e) { endConnection();
         } catch (ClassNotFoundException e) {throw new RuntimeException(e);} // This should not happen, since all classes are known in both server and client.
     }
-    //TODO: decide on private or not
+
+    /**
+     * Creates a new game/resets it and sends the new model to the clients. Only usable by the server.
+     */
     public void newGame() {
         if (isServer()) {
             model = model.newGame();
@@ -110,12 +120,24 @@ public class ClientServerThread extends Thread implements IWizardModel{
             serverOOS.forEach(oos -> send(oos, model));
         }
     }
+
+    /**
+     * Deals out the cards, determines a trump and sends the new model to the clients. Only usable by the server.
+     */
     public void dealCards() {
         if (isServer()) {
             model = model.dealCards();
             serverOOS.forEach(oos -> send(oos, model));
         }
     }
+
+    /**
+     * As server: executes method in model and sends updated model to all clients
+     * <p></p>
+     * As client: executes method in model and sends updated model to server.
+     * <p></p>
+     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     */
     public void setTricksCalled(int tricksCalled, int playerNum) {
         if (isServer()) {
             model = model.setTricksCalled(tricksCalled,playerNum);
@@ -123,6 +145,13 @@ public class ClientServerThread extends Thread implements IWizardModel{
         }
         else send(oos, model.setTricksCalled(tricksCalled, playerNum));
     }
+    /**
+     * As server: executes method in model and sends updated model to all clients
+     * <p></p>
+     * As client: executes method in model and sends updated model to server.
+     * <p></p>
+     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     */
     public void playCard(byte card) {
         if (isServer()) {
             model = model.playCard(card);
@@ -130,33 +159,90 @@ public class ClientServerThread extends Thread implements IWizardModel{
         }
         else send(oos, model.playCard(card));
     }
+    /**
+     * Executes method in model and sends updated model to all clients. Only usable by the server.
+     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     */
     public void endTrick() {
         if (isServer()) {
             model = model.endTrick();
             serverOOS.forEach(oos -> send(oos, model));
         }
     }
+    /**
+     * Executes method in model and sends updated model to all clients. Only usable by the server.
+     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     */
     public void endRound() {
         if (isServer()) {
             model = model.endRound().dealCards();
             serverOOS.forEach(oos -> send(oos, model));
         }
     }
+
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public int isLegalTrickCall(int tricksCalled, int playerNum) {return model.isLegalTrickCall(tricksCalled, playerNum);}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public int isLegalMove(byte card) {return model.isLegalMove(card);}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public boolean isGameOver() {return model.isGameOver();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public boolean isTrickOver() {return model.isTrickOver();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public boolean isRoundOver() {return model.isRoundOver();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public boolean allPlayersCalledTricks() {return model.haveAllPlayersCalledTricks();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public List<Player> players() {return model.players();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public List<Byte> trick() {return model.trick();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public byte trump() {return model.trump();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public int round() {return model.round();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public int winner() {return model.trickWinner();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public int getCurrentPlayerNum() {return model.getCurrentPlayerNum();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public int getCurrentTrickCaller(){return model.getCurrentTrickCaller();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public List<Integer> getCurrentGameWinner() {return model.getCurrentGameWinner();}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public int getAssignedPlayerNum() {return assignedPlayerNumber;}
+    /**
+     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     */
     public boolean hasGameEnded() {return gameEnded;}
     void endConnection() {
         try {
