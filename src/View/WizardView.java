@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 
 import static controlP5.ControlP5Constants.ACTION_RELEASE;
+import static controlP5.ControlP5Constants.ESCAPE;
 
 /**
  * Class to display the game to the user, receive and transfer inputs from the user to the controller.
@@ -22,6 +23,7 @@ public class WizardView extends PApplet implements IWizardView {
     private int selectedCardIndex = 0;
     private int cardsInHand = 1;
     private String message = "";
+    private String message2 = "";
     private final PImage[] cardImages = new PImage[15];
 
     private ControlP5 cp5;
@@ -122,6 +124,7 @@ public class WizardView extends PApplet implements IWizardView {
         }
 
         text(message, 150, 370);
+        text(message2, 150, 340);
 
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
@@ -179,6 +182,7 @@ public class WizardView extends PApplet implements IWizardView {
         noFill();
         drawCards(players.get(assignedPlayerNum).hand().get(selectedCardIndex),20+selectedCardIndex*42,400);
         text(message, 150, 370);
+        text(message2, 150, 340);
     }
 
     /**
@@ -220,6 +224,14 @@ public class WizardView extends PApplet implements IWizardView {
     public void displayText(String text) {
         message = text;
     }
+    /**
+     * saves a text message to be displayed on screen
+     * @param text text message
+     */
+    @Override
+    public void displayText2(String text) {
+        message2 = text;
+    }
 
     /**
      * Records user inputs and transfers them to the controller
@@ -232,12 +244,9 @@ public class WizardView extends PApplet implements IWizardView {
         if(event.getKeyCode() == RIGHT) {
             selectedCardIndex = ++selectedCardIndex % cardsInHand;
         }
-        if(event.getKeyCode() == LEFT) {
-            selectedCardIndex = Math.abs(--selectedCardIndex % cardsInHand);
-            //TODO: fix if there is time
-            // selectedCardIndex = (selectedCardIndex-1) % cardsInHand < 0? selectedCardIndex-1+cardsInHand:selectedCardIndex-1
+        if (event.getKeyCode() == LEFT) {
+            selectedCardIndex = (selectedCardIndex - 1 + cardsInHand) % cardsInHand;
         }
-        // TODO: Maybe add a method that increases the selected card index by 1, so that when an input fails, the index doesn't change
         if(event.getKeyCode() == ENTER) {
             controller.cardInput(selectedCardIndex--);
             selectedCardIndex = Math.max(selectedCardIndex, 0);
@@ -246,13 +255,12 @@ public class WizardView extends PApplet implements IWizardView {
         if(event.getKey() == ' ') {
             controller.functionInput(0);
         }
-        /*
-        if (event.getKeyCode() == BACKSPACE) {
+        if (event.getKeyCode() == ESCAPE) {
             controller.functionInput(1);
         }
         if (event.getKey() == 'r') {
             controller.functionInput(2);
-        }*/
+        }
     }
 
     // bit-masks to decode the cards to be drawn

@@ -28,4 +28,6 @@ public interface IWizardModel {
     int round();
     int winner();
     boolean hasGameEnded();
+    boolean isServer();
+    void endGame();
 }

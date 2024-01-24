@@ -25,9 +25,9 @@ public class ClientServerThreadTest {
     }
     @AfterEach
     void tearDown() {
-        server.endConnection();
-        client1.endConnection();
-        client2.endConnection();
+        server.endGame();
+        client1.endGame();
+        client2.endGame();
     }
 
     @Test

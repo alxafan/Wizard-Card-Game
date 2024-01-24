@@ -41,10 +41,10 @@ public class WizardController implements IWizardController{
      */
     @Override
     public void nextFrame() {
-        //TODO: move checks here, put "your turn to do x,y" here
         if (model.hasGameEnded()) gameState = GameState.GAME_OVER;
         switch (gameState) {
             case START:
+
                 // in case the client takes a bit of time to connect
                 if (model.getAssignedPlayerNum() == -1) break;
                 view.drawStartScreen(model.getAssignedPlayerNum());
@@ -52,22 +52,25 @@ public class WizardController implements IWizardController{
                 break;
             case CALLING_TRICKS:
 
-                //if (model.getCurrentTrickCaller() == model.getAssignedPlayerNum() && model.round() > 1) view.displayText("Player " + model.winner() + " won the last trick");
+                if (model.getCurrentTrickCaller() == model.getAssignedPlayerNum()) view.displayText2("Your turn to call a trick");
+                else view.displayText2("");
                 if (model.allPlayersCalledTricks()) {
                     gameState = GameState.PLAYING_TRICK;
                     view.displayText("");
                     break;
                 }
-
                 view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentTrickCaller(), model.getAssignedPlayerNum());
                 break;
             case PLAYING_TRICK:
-                //if (model.getCurrentPlayerNum() == model.getAssignedPlayerNum()) view.displayText("Your turn to play a card");
+
+                if (model.getCurrentPlayerNum() == model.getAssignedPlayerNum()) view.displayText2("Your turn to play a card");
+                else view.displayText2("");
                 // needed to fix synchronization for clients, otherwise they get stuck in a wrong gameState
                 if (!model.allPlayersCalledTricks()){
                     gameState = GameState.CALLING_TRICKS;
                     view.displayText("");
                 }
+
                 if (model.isTrickOver()) {
                     model.endTrick();
                     view.displayText("");
@@ -79,6 +82,7 @@ public class WizardController implements IWizardController{
                 }
                 if (model.isGameOver()) {
                     gameState = GameState.GAME_OVER;
+                    model.endGame();
                     view.displayText("");
                     break;
                 }
@@ -129,26 +133,21 @@ public class WizardController implements IWizardController{
 
     /**
      * Sends the model a command, if the gameState allows for it.
-     * @param functionNum number determining which function will be called
+     * @param functionNum 0 -> dealCards, 1 -> end Game, 2 -> new Game
      */
     @Override
     public void functionInput(int functionNum) {
         switch (functionNum) {
-            case 0: {
-                if (gameState == GameState.START) {
-                    model.dealCards();
-                }
+            case 0:
+                if (gameState == GameState.START) model.dealCards();
                 break;
-            }
             case 1:
-                if(gameState == GameState.GAME_OVER) {
-                    model.newGame();
-                }
+                if(!model.players().isEmpty()) model.endGame();
                 break;
-            case 2: //TODO: implement a regular way to undo
-                if (gameState == GameState.PLAYING_TRICK) {
-                    if (model.trick().isEmpty()) gameState = GameState.CALLING_TRICKS;
-                    model = modelHistory.remove(modelHistory.size() - 1);
+            case 2:
+                if(model.isServer()) {
+                    model.newGame();
+                    model.dealCards();
                 }
                 break;
         }

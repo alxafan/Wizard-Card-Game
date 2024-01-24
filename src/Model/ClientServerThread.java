@@ -15,12 +15,12 @@ public class ClientServerThread extends Thread implements IWizardModel{
     private final int port;
     private final int playerCount; // TODO: implement way to change this more easily
     private ServerSocket serversocket;
-    private ArrayList<Socket> sockets = new ArrayList<>();
+    private final ArrayList<Socket> sockets = new ArrayList<>();
     private WizardModel model;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
-    private ArrayList<ObjectOutputStream> serverOOS = new ArrayList<>();
-    private ArrayList<ObjectInputStream> serverOIS = new ArrayList<>();
+    private final ArrayList<ObjectOutputStream> serverOOS = new ArrayList<>();
+    private final ArrayList<ObjectInputStream> serverOIS = new ArrayList<>();
     private int assignedPlayerNumber = -1;
     private int inputCheckCounter;
     private boolean gameEnded;
@@ -99,14 +99,15 @@ public class ClientServerThread extends Thread implements IWizardModel{
                             serverOOS.forEach(ou -> send(ou, model));
                         } catch (SocketTimeoutException e) { inputCheckCounter = (inputCheckCounter+1)%playerCount;}
                     }
-                } catch (IOException e) {endConnection();}
+                } catch (IOException e) {
+                    endGame();}
             }
             ois = new ObjectInputStream(sockets.get(0).getInputStream());
             assignedPlayerNumber = ois.read();
             while (true) {
                 model = (WizardModel) ois.readObject();
             }
-        } catch (IOException e) { endConnection();
+        } catch (IOException e) { endGame();
         } catch (ClassNotFoundException e) {throw new RuntimeException(e);} // This should not happen, since all classes are known in both server and client.
     }
 
@@ -244,7 +245,10 @@ public class ClientServerThread extends Thread implements IWizardModel{
      * see <a href="src.Model.WizardModel">Model</a> for more information about this method
      */
     public boolean hasGameEnded() {return gameEnded;}
-    void endConnection() {
+    /**
+     * Ends the connection with server/clients
+     */
+    public void endGame() {
         try {
             gameEnded = true;
             if (isServer()) {
