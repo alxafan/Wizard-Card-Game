@@ -20,6 +20,7 @@ public interface IWizardModel {
     List<Byte> trick();
     byte trump();
     int getCurrentPlayerNum();
+    int getCurrentTrickCaller();
     List<Integer> getCurrentGameWinner();
     int getAssignedPlayerNum();
     int round();

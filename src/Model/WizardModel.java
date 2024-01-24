@@ -20,9 +20,6 @@ import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.*;
 
-// CurrentPlayer is calculated using the startingPlayer
-// startingPlayer is used to remember which player is currently calling tricks
-
 /**
  * The main model class. Handles the game's logic and stores the relevant data.
  * Any time something is changed about the model, it should be replaced by a new one wherever it is used,
@@ -34,9 +31,9 @@ import java.util.stream.*;
  * @param startingPlayer
  * @param trump
  * @param totalTricksCalled
- * @param winner is always -1, unless a trick winner was determined recently (endTrick/endRound)
+ * @param trickWinner       is always -1, unless a trick winner was determined recently (endTrick/endRound)
  */
-public record WizardModel(List<Player> players, List<Byte> trick, int round, int startingPlayer, byte trump, int totalTricksCalled, int winner) implements Serializable {
+public record WizardModel(List<Player> players, List<Byte> trick, int round, int startingPlayer, byte trump, int totalTricksCalled, int trickWinner) implements Serializable {
 
     private static final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00111111);
     private static final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
@@ -53,7 +50,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         ArrayList<Byte> deck = new ArrayList<>(List.of((byte) 0,(byte) 1,(byte) 2,(byte) 3,(byte) 4,(byte) 5,(byte) 6,(byte) 7,(byte) 8,(byte) 9,(byte) 10,(byte) 11,(byte) 12,(byte) 13,(byte) 14,(byte) 64,(byte) 65,(byte) 66,(byte) 67,(byte) 68,(byte) 69,(byte) 70,(byte) 71,(byte) 72,(byte) 73,(byte) 74,(byte) 75,(byte) 76,(byte) 77,(byte) 78,(byte) 128,(byte) 129,(byte) 130,(byte) 131,(byte) 132,(byte) 133,(byte) 134,(byte) 135,(byte) 136,(byte) 137,(byte) 138,(byte) 139,(byte) 140,(byte) 141,(byte) 142,(byte) 192,(byte) 193,(byte) 194,(byte) 195,(byte) 196,(byte) 197,(byte) 198,(byte) 199,(byte) 200,(byte) 201,(byte) 202,(byte) 203,(byte) 204,(byte) 205,(byte) 206));
         List<Player> p = new ArrayList<>(players);
         for (int i = 0; i < round; i++) p.replaceAll(player -> player.addCard(deck.remove((int) (Math.random()*deck.size()))));
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, deck.remove((int) (Math.random()*deck.size())), totalTricksCalled, -1);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, deck.remove((int) (Math.random()*deck.size())), totalTricksCalled, trickWinner);
     }
     /**
      * Method which plays a card into the trick, while making sure that no wizard rules are broken. Keep in mind that this only works if the controller makes sure that the player whose turn it is plays
@@ -75,7 +72,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
             if (colorMask.apply(card).equals(colorMask.apply(trump))) card |= 0b00100000;
         }
         t.add(card);
-        return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled, -1);
+        return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled, trickWinner);
     }
     public WizardModel endTrick() {
         assert isTrickOver(): "Not all players have played a card yet.";
@@ -95,12 +92,12 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         List<Player> p = new ArrayList<>(players);
         p.replaceAll(player -> player.addToScore(player.tricksCalled()-player.tricksWon() == 0 ? 20+player.tricksWon()*10 : -Math.abs(player.tricksCalled()-player.tricksWon())*10).resetTricks());
         // clears the trick by creating a new empty list
-        return new WizardModel(List.copyOf(p), List.of(), round+1, round%players.size(), (byte) 0, totalTricksCalled, winner);
+        return new WizardModel(List.copyOf(p), List.of(), round+1, round%players.size(), (byte) 0, totalTricksCalled, trickWinner);
     }
     WizardModel addPlayer() {
         List<Player> p = new ArrayList<>(players);
         p.add(new Player());
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled, -1);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled, trickWinner);
     }
     public WizardModel setTricksCalled(int tricksCalled, int playerNum) {
         assert !allPlayersCalledTricks(): "All players have called their tricks";
@@ -111,7 +108,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
 
         List<Player> p = new ArrayList<>(players);
         p = replaceAtIndex(p,playerNum, p.get(playerNum).setTricksCalled(tricksCalled));
-        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled + tricksCalled, -1);
+        return new WizardModel(List.copyOf(p), trick, round, startingPlayer, trump, totalTricksCalled + tricksCalled, trickWinner);
     }
 
     /**
@@ -179,7 +176,10 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         result.append("Round: ").append(round).append("\n").append("Trump card: ").append(cardToString(trump)).append("\n").append("Cards in trick: ").append("\n");
         trick.forEach(c -> result.append(cardToString(c)).append("\n"));
         result.append("\n").append("Players hands: ").append("\n");
-        players.forEach(player -> result.append(player.toString().formatted(players.indexOf(player))).append("\n"));
+        players.forEach(p -> p.hand().forEach(c -> result.append(cardToString(c)).append("\n")));
+        result.append("Player-data: ");
+        players.forEach(result::append);
+        result.append("\n").append("Current players turn: ").append(getCurrentPlayerNum());
         return result.toString();
     }
 }

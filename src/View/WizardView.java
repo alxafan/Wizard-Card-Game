@@ -68,9 +68,11 @@ public class WizardView extends PApplet implements IWizardView {
     }
 
     @Override
-    public void drawStartScreen() {
+    public void drawStartScreen(int assignedPlayerNum) {
         // Screen displaying that players may join the game
         background(0);
+        textSize(40);
+        text("You are Player " + (assignedPlayerNum+1), 310,260);
     }
 
     @Override
@@ -79,21 +81,26 @@ public class WizardView extends PApplet implements IWizardView {
         enterTricksCalled.show();
         background(0);
         textSize(16);
-        for (int i = 0; i < players.size(); i++) {
-            text("Player " + i + " score: " + players.get(i).score()
-                            + "   called-tricks: " + players.get(i).tricksCalled()
-                    , 300,50+20*i);
-        }
 
         text("Round: " + round, 10, 20);
         text("Trump card: ",10,40);
         drawCards(trump, 10,50);
-        text(players.get(assignedPlayerNum).toString().formatted(assignedPlayerNum), 300, 20);
+
         for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
             byte card = players.get(assignedPlayerNum).hand().get(i);
             drawCards(card,20+i*65,400);
         }
-        text(message, 400, 20);
+
+        text(message, 150, 370);
+
+        for (int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            if (!player.hasCalledTrick()) fill(200,30,20);
+            text("Player " + (i+1) + " score: " + player.score()
+                            + "   called-tricks: " + player.tricksCalled()
+                    , 550,50+20*i);
+            noFill();
+        }
     }
 
     @Override
@@ -106,13 +113,12 @@ public class WizardView extends PApplet implements IWizardView {
         cardsInHand = players.get(assignedPlayerNum).hand().size();
 
         for (int i = 0; i < players.size(); i++) {
-            text("Player " + i + " score: " + players.get(i).score()
+            text("Player " + (i+1) + " score: " + players.get(i).score()
                             + "   called-tricks: " + players.get(i).tricksCalled()
                             + "   won-tricks: " + players.get(i).tricksWon()
-                    , 300,50+20*i);
+                    , 550,50+20*i);
         }
 
-        StringBuilder result = new StringBuilder();
         text("Round: " + round, 10, 20);
         text("Trump card: ",10,40);
         drawCards(trump, 10,50);
@@ -123,14 +129,22 @@ public class WizardView extends PApplet implements IWizardView {
         }
 
         if (cardsInHand <= 0) return;
-        color(255);
+        fill(255);
         rect(20+selectedCardIndex*70-5,400-5,70,100);
-
+        noFill();
         for(int i = 0; i < players.get(assignedPlayerNum).hand().size(); i++) {
             byte card = players.get(assignedPlayerNum).hand().get(i);
             drawCards(card,20+i*70,400);
         }
-        text(message, 400, 20);
+        text(message, 150, 370);
+    }
+    @Override
+    public void drawEndScreen(List<Integer> currentGameWinner, List<Player> players) {
+        background(255);
+        StringBuilder result = new StringBuilder();
+        result.append("Players: ");
+        currentGameWinner.forEach(w -> result.append(w).append(", "));
+        result.append("won with the score: " + players.get(currentGameWinner.get(0)).score());
     }
 
     //TODO: add position
@@ -138,28 +152,17 @@ public class WizardView extends PApplet implements IWizardView {
         switch (colorMask.apply(card)) {
             case (byte) 0b00000000 -> tint(255,0,0);
             case (byte) 0b01000000 -> tint(0,255,0);
-            case (byte) 0b10000000 -> tint(0,0,255);
+            case (byte) 0b10000000 -> tint(10,100,200);
             case (byte) 0b11000000 -> tint(255,255,0);
             default -> tint(255);
         }
         image(cardImages[valueMask.apply(card)],x,y);
+        noTint();
     }
 
     @Override
     public void displayText(String text) {
         message = text;
-    }
-
-    @Override
-    public void drawEndScreen(List<Integer> currentGameWinner) {
-        background(255);
-        StringBuilder result = new StringBuilder();
-        result.append("Players: ");
-        currentGameWinner.forEach(w -> {
-            result.append(w).append(", ");
-        });
-        result.append("won the game");
-        //TODO: add scores or whatever
     }
 
     @Override
@@ -189,7 +192,7 @@ public class WizardView extends PApplet implements IWizardView {
         }
     }
 
-    // valueMask modified to ignore flags
+    // bit-masks to decode the cards to be drawn
     private final UnaryOperator<Byte> valueMask = n -> (byte) (n & 0b00001111);
     private final UnaryOperator<Byte> colorMask = n -> (byte) (n & 0b11000000);
 

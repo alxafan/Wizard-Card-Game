@@ -17,8 +17,9 @@ public class ClientServerThread extends Thread implements IWizardModel{
     private ObjectOutputStream oos;
     private ArrayList<ObjectOutputStream> serverOOS = new ArrayList<>();
     private ArrayList<ObjectInputStream> serverOIS = new ArrayList<>();
-    private int assignedPlayerNumber;
+    private int assignedPlayerNumber = -1;
     private int inputCheckCounter;
+
 
     private ClientServerThread(String ip, int port, int playerCount) {
         this.ip = ip;
@@ -34,32 +35,14 @@ public class ClientServerThread extends Thread implements IWizardModel{
      */
     public static ClientServerThread newAny(String ip, int port, int playerCount) {
         var cst = new ClientServerThread(ip, port, playerCount);
-        cst.reconnect();
+        cst.connect();
         return cst;
     }
 
     /**
      * Creates a new connection either as a client or as a server.
      */
-    private synchronized void reconnect() {
-        System.out.println("Reconnect");
-        // Close all previously active sockets and streams before reconnecting
-        if(!sockets.isEmpty()) {
-            try { for (Socket socket : sockets) {socket.close();}
-            } catch (IOException e) {}
-            sockets.clear();
-        }
-        if(serversocket != null) {
-            try { serversocket.close();
-            } catch (IOException e) {}
-            serversocket = null;
-        }
-        if(oos != null) {
-            try { oos.close();
-            } catch (IOException e) {}
-            oos = null;
-        }
-
+    private synchronized void connect() {
         // Initialize a new connection
         try {
             // Try to connect as a client first
@@ -83,10 +66,8 @@ public class ClientServerThread extends Thread implements IWizardModel{
             if (oos != null) {
                 oos.reset();
                 oos.writeObject(obj);
-                System.out.println("Object sent");
             }
-        } catch (IOException e) { System.out.println("something went wrong");
-        }
+        } catch (IOException e) {}// if something went wrong, send nothing
     }
 
     /**
@@ -109,9 +90,6 @@ public class ClientServerThread extends Thread implements IWizardModel{
                         serverOOS.add(serverOOS.size(), new ObjectOutputStream(sockets.get(serverOOS.size()).getOutputStream()));
                         serverOOS.get(i).write(i+1);
                         serverOIS.add(i, new ObjectInputStream(sockets.get(i).getInputStream()));
-
-                        //TODO: remove print
-                        System.out.println("Connection established with " + sockets.get(i).getInetAddress());
                     }
 
                     newGame();
@@ -124,17 +102,14 @@ public class ClientServerThread extends Thread implements IWizardModel{
                     }
                 } catch (IOException e) {throw new RuntimeException(e);}
             }
+
             ObjectInputStream ois = new ObjectInputStream(sockets.get(0).getInputStream());
             assignedPlayerNumber = ois.read();
-            System.out.println("assigned PlayerNumber = " + assignedPlayerNumber);
 
             while (true) {
-                WizardModel modelTest = (WizardModel) ois.readObject();
-                if(!modelTest.equals(model)) System.out.println("new Model received");
-                model = modelTest;
+                model = (WizardModel) ois.readObject();;
             }
         } catch (IOException e) {
-            // Connection lost end game prematurely
         } catch (ClassNotFoundException e) {throw new RuntimeException(e);} // This should not happen, since all classes are known in both server and client.
     }
 
@@ -187,8 +162,9 @@ public class ClientServerThread extends Thread implements IWizardModel{
     public List<Byte> trick() {return model.trick();}
     public byte trump() {return model.trump();}
     public int round() {return model.round();}
-    public int winner() {return model.winner();}
+    public int winner() {return model.trickWinner();}
     public int getCurrentPlayerNum() {return model.getCurrentPlayerNum();}
+    public int getCurrentTrickCaller(){return model.getCurrentTrickCaller();}
     public List<Integer> getCurrentGameWinner() {return model.getCurrentGameWinner();}
     public int getAssignedPlayerNum() {return assignedPlayerNumber;}
 }

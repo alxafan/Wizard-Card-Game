@@ -6,7 +6,7 @@ import View.WizardView;
 
 public final class Main {
     public static void main(String[] args) {
-        var model = ClientServerThread.newAny("localhost", 5555, 3);
+        var model = ClientServerThread.newAny("localhost", 5555, 3); //1<PlayerCount<7
         model.start();
         var controller = new WizardController();
         var view = new WizardView();

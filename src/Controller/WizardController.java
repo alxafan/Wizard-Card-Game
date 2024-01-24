@@ -26,68 +26,64 @@ public class WizardController implements IWizardController{
     public void nextFrame() {
         switch (gameState) {
             case START:
-                view.drawStartScreen();
+                // in case the client takes a bit of time to connect
+                if (model.getAssignedPlayerNum() == -1) break;
+                view.drawStartScreen(model.getAssignedPlayerNum());
                 if (!model.players().isEmpty() && !model.players().get(0).hand().isEmpty()) gameState = GameState.CALLING_TRICKS;
                 break;
             case CALLING_TRICKS:
-                if (model.winner() != -1) view.displayText("Player " + model.winner() + " won the last trick");
-                if (model.allPlayersCalledTricks()) gameState = GameState.PLAYING_TRICK;
-                // used to signal when it's the players turn to call a trick, 31 is always a legal trick amount, as a game can only last for 30 rounds max
 
-                view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
+                //if (model.getCurrentTrickCaller() == model.getAssignedPlayerNum() && model.round() > 1) view.displayText("Player " + model.winner() + " won the last trick");
+                if (model.allPlayersCalledTricks()) {
+                    gameState = GameState.PLAYING_TRICK;
+                    view.displayText("");
+                    break;
+                }
+
+                view.drawCallingTricksScreen(model.players(), model.round(), model.trump(), model.getCurrentTrickCaller(), model.getAssignedPlayerNum());
                 break;
             case PLAYING_TRICK:
-                // crutch solution
-                if (!model.allPlayersCalledTricks()) gameState = GameState.CALLING_TRICKS;
+                //if (model.getCurrentPlayerNum() == model.getAssignedPlayerNum()) view.displayText("Your turn to play a card");
+                // needed to fix synchronization for clients, otherwise they get stuck in a wrong gameState
+                if (!model.allPlayersCalledTricks()){
+                    gameState = GameState.CALLING_TRICKS;
+                    view.displayText("");
+                }
                 if (model.isTrickOver()) {
                     model.endTrick();
+                    view.displayText("");
                 }
                 if (model.isRoundOver()) {
                     model.endRound();
                     gameState = GameState.CALLING_TRICKS;
+                    view.displayText("");
                 }
                 if (model.isGameOver()) {
                     gameState = GameState.GAME_OVER;
+                    view.displayText("");
+                    break;
                 }
                 view.drawPlayingScreen(model.players(), model.trick(), model.trump(), model.round(), model.getCurrentPlayerNum(), model.getAssignedPlayerNum());
                 break;
             case GAME_OVER:
-                view.drawEndScreen(model.getCurrentGameWinner());
+                view.drawEndScreen(model.getCurrentGameWinner(), model.players());
                 break;
             default:
                 break;
         }
     }
-    /*
-    if (model.isTrickOver()) {
-                    model.endTrick();
-                    gameState = GameState.CALLING_TRICKS;
-                    view.displayText("");
-                    view.displayText("Player " + model.winner() + " won this trick.");
-                }
-                if (model.isRoundOver()) {
-                    model.endRound();
-                    if (model.isGameOver()){
-                        gameState = GameState.GAME_OVER;
-                        view.displayText("");
-                    }
-                    else {
-                        model.dealCards();
-                        gameState = GameState.CALLING_TRICKS;
-                        view.displayText("");
-                        // TODO: Display the scores being updated, maybe store the points before model.endRound()?
-                    }
-                }
-     */
 
     @Override
     public void cardInput(int cardIndex) {
-        if (gameState != GameState.PLAYING_TRICK) return; // use this later with and give feedback (view method) cardIndex >= 0 && assignedPlayerNum == model.getCurrentPlayerNum()
-        byte card = model.players().get(model.getAssignedPlayerNum()).hand().get(cardIndex);
+        if (gameState != GameState.PLAYING_TRICK) {
+            view.displayText("You can't play a card in this phase of the game");
+            return;
+        }
         if (model.getAssignedPlayerNum() != model.getCurrentPlayerNum()) {
             view.displayText("Not currently your turn to play a card");
             return;
         }
+        byte card = model.players().get(model.getAssignedPlayerNum()).hand().get(cardIndex);
         switch (model.isLegalMove(card)) {
             case 0:
                 modelHistory.add(model);
