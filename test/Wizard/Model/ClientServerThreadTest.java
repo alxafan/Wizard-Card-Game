@@ -1,5 +1,7 @@
-package Model;
+package Wizard.Model;
 
+import Wizard.Model.ClientServerThread;
+import Wizard.Model.Player;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

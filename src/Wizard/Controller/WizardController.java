@@ -1,7 +1,7 @@
-package Controller;
+package Wizard.Controller;
 
-import Model.IWizardModel;
-import View.IWizardView;
+import Wizard.Model.IWizardModel;
+import Wizard.View.IWizardView;
 
 import java.util.ArrayList;
 
@@ -16,7 +16,7 @@ public class WizardController implements IWizardController{
     IWizardView view;
 
     // Move to model
-    ArrayList<IWizardModel> modelHistory = new ArrayList<>();
+    //ArrayList<IWizardModel> modelHistory = new ArrayList<>();     vergessen in der Abgabe zu entfernen
 
     /**
      * Sets the model to which inputs are given
@@ -113,7 +113,7 @@ public class WizardController implements IWizardController{
         byte card = model.players().get(model.getAssignedPlayerNum()).hand().get(cardIndex);
         switch (model.isLegalMove(card)) {
             case 0:
-                modelHistory.add(model);
+                //modelHistory.add(model);          Vergessen in der Abgabe zu entfernen
                 model.playCard(card);
                 view.displayText("");
                 break;

@@ -1,4 +1,4 @@
-package Model;
+package Wizard.Model;
 
 import java.io.Serializable;
 import java.util.*;
@@ -19,7 +19,7 @@ import java.util.stream.*;
  * "model = model.dealCards()" to deal out cards to the players.
  * <p></p>
  * "model.isRoundOver()" to see if the round is over (task from the controller)
- * @param players List of a record, which stores information relevant to each Player, see more under <a href="src.Model.Player">Player</a>.
+ * @param players List of a record, which stores information relevant to each Player, see more under <a href="Player.html">Player</a>.
  * @param trick List of the played cards in the current trick
  * @param round current round
  * @param startingPlayer determines the first player to play a card in the current trick
@@ -34,7 +34,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
     private static final byte wizard = 0b00001110;
     private static final byte fool = 0b00000000;
 
-    WizardModel() {this(List.of(), List.of(), 1, 0, (byte) 0, 0, -1);}
+    public WizardModel() {this(List.of(), List.of(), 1, 0, (byte) 0, 0, -1);}
 
     // use this to reset a game in the future
     WizardModel newGame() {return new WizardModel();}
@@ -56,7 +56,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
      * @param playerNum player's number
      * @return updated model
      */
-    public WizardModel setTricksCalled(int tricksCalled, int playerNum) {
+    public WizardModel callTricks(int tricksCalled, int playerNum) {
         assert !haveAllPlayersCalledTricks(): "All players have called their tricks";
         assert ((startingPlayer + players.stream().filter(Player::hasCalledTrick).count()) % players.size() == playerNum): "Not currently this players turn to call a trick";
         assert playerNum >= 0 && playerNum < players.size(): "Player index out of bounds.";
@@ -89,6 +89,16 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         }
         t.add(card);
         return new WizardModel(List.copyOf(p), List.copyOf(t), round, startingPlayer, trump, totalTricksCalled, trickWinner);
+    }
+
+    /**
+     * Sets the trump to a color of choice
+     * @param color 0 red, 1 green, 2 blue, 3 yellow
+     * @return updated model
+     */
+    public WizardModel callTrump(int color, int playerNum) {
+        assert color < 4 && color >= 0;
+        return new WizardModel(players, trick, round, startingPlayer, (byte) color, totalTricksCalled, trickWinner);
     }
 
     /**
@@ -152,6 +162,7 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         if (players.stream().filter(Player::hasCalledTrick).count() == players.size()-1 && totalTricksCalled+tricksCalled == round) return 5;
         return 0;
     }
+
     /**
      * Method to check whether a given card can be played or not
      * @param card desired card to be checked
@@ -170,6 +181,16 @@ public record WizardModel(List<Player> players, List<Byte> trick, int round, int
         // this part is necessary, because it is possible that a player does not have a matching color on his hand;
         if (!wizardPlayedFirst && (valueMask.apply(card) != wizard) && (valueMask.apply(card) != fool) && (firstNonFoolCard != fool) && (!colorMask.apply(firstNonFoolCard).equals(colorMask.apply(card))) && (players.get(currentPlayer).hand().stream().anyMatch(c -> colorMask.apply(c).equals(colorMask.apply(firstNonFoolCard))))) return 3;
 
+        return 0;
+    }
+
+    /**
+     * checks if calling a Trump is possible
+     * @param color
+     * @return
+     */
+    int isLegalTrumpCall(int color, int playerNum) {
+        //TODO implement this
         return 0;
     }
 

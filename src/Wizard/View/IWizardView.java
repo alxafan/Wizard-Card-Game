@@ -1,6 +1,6 @@
-package View;
+package Wizard.View;
 
-import Model.Player;
+import Wizard.Model.Player;
 import java.util.List;
 /**
  * the interface used by the controller to send information to the view

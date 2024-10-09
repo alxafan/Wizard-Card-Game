@@ -1,4 +1,4 @@
-package Controller;
+package Wizard.Controller;
 
 public interface IWizardController {
     /**

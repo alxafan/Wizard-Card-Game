@@ -1,4 +1,4 @@
-package Model;
+package Wizard.Model;
 
 import org.junit.jupiter.api.Test;
 
@@ -57,13 +57,13 @@ public class WizardModelTest {
         assertEquals(4, w.isLegalTrickCall(2,0));
 
 
-        w = w.setTricksCalled(0,0).setTricksCalled(1,1);
+        w = w.callTricks(0,0).callTricks(1,1);
 
         assertEquals(w.players().get(0).tricksCalled(), 0);
         assertEquals(w.players().get(1).tricksCalled(), 1);
 
         assertEquals(5, w.isLegalTrickCall(0,2));
-        assertEquals(1, w.setTricksCalled(1,2).isLegalTrickCall(0,0));
+        assertEquals(1, w.callTricks(1,2).isLegalTrickCall(0,0));
     }
 
     @Test

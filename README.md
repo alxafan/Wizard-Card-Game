@@ -35,7 +35,7 @@ Am Ende hat der Spieler mit der höchsten Punktzahl gewonnen.
 ## Start-Anleitung
 
 Zum **Starten** des Spieles müssen folgende Schritte befolgt werden:
->1. Öffnen der Datei `Main.java`
+>1. Öffnen der Datei `Wizard.Main.java`
 >2. Falls man einem Spiel beitreten will: Eingeben der ip-Adresse eines Servers in die Gänsefüßchen von String ip = "localhost"
 >2. Falls man ein Spiel hosten will: "localhost" stehen lassen, ip adresse bestimmen und an andere Spieler weitergeben
 >3. Eintragen der gewünschten oder vorgesehenen Spieleranzahl
@@ -69,7 +69,7 @@ Das Programm verwendet die folgenden Bibliotheken:
 
 ## Jshell Anleitung
 Ein sinnvolles Spiel ist nur begrenzt mit der Jshell möglich. Dennoch sind hier die Schritte um das Model mit der Jshell zu testen:
->1. Starten einer Konsole
+>1. Starten einer Konsole und wechseln ins Haupt-Verzeichnis des Projekts (Wizard)
 >2. Öffnen der Jshell über `jshell -R-ea -class-path ./out/production/Wizard"` in einer Kommandozeile
 >3. Importieren des Paketes Model über `import Model.*`
 >4. Befehle eingeben

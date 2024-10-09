@@ -1,11 +1,11 @@
-package View;
+package Wizard.View;
 
-import Controller.IWizardController;
+import Wizard.Controller.IWizardController;
 import controlP5.*;
 import processing.core.PApplet;
 import processing.core.PImage;
 import processing.event.KeyEvent;
-import Model.Player;
+import Wizard.Model.Player;
 
 import java.util.List;
 import java.util.function.UnaryOperator;

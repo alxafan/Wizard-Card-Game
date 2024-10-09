@@ -1,14 +1,15 @@
+package Wizard;
 
-import Model.ClientServerThread;
-import Controller.WizardController;
+import Wizard.Model.ClientServerThread;
+import Wizard.Controller.WizardController;
 import processing.core.PApplet;
-import View.WizardView;
+import Wizard.View.WizardView;
 
 public final class Main {
     public static void main(String[] args) {
 
         String ip = "localhost";
-        int SpielerAnzahl = 3;
+        int SpielerAnzahl = 2;
 
         var model = ClientServerThread.newAny(ip, 5555, SpielerAnzahl); //1<PlayerCount<7
         model.start();

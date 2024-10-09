@@ -1,4 +1,4 @@
-package Model;
+package Wizard.Model;
 
 import java.io.Serializable;
 import java.util.*;

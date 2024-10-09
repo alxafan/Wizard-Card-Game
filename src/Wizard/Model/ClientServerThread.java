@@ -1,4 +1,4 @@
-package Model;
+package Wizard.Model;
 
 import java.io.*;
 import java.net.*;
@@ -13,7 +13,7 @@ import java.util.*;
 public class ClientServerThread extends Thread implements IWizardModel{
     private final String ip;
     private final int port;
-    private final int playerCount; // TODO: implement way to change this more easily
+    private final int playerCount;
     private ServerSocket serversocket;
     private final ArrayList<Socket> sockets = new ArrayList<>();
     private WizardModel model;
@@ -137,21 +137,21 @@ public class ClientServerThread extends Thread implements IWizardModel{
      * <p></p>
      * As client: executes method in model and sends updated model to server.
      * <p></p>
-     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     * See <a href="WizardModel.html">Model</a> for more information about this method.
      */
     public void setTricksCalled(int tricksCalled, int playerNum) {
         if (isServer()) {
-            model = model.setTricksCalled(tricksCalled,playerNum);
+            model = model.callTricks(tricksCalled,playerNum);
             serverOOS.forEach(oos -> send(oos, model));
         }
-        else send(oos, model.setTricksCalled(tricksCalled, playerNum));
+        else send(oos, model.callTricks(tricksCalled, playerNum));
     }
     /**
      * As server: executes method in model and sends updated model to all clients
      * <p></p>
      * As client: executes method in model and sends updated model to server.
      * <p></p>
-     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     * See <a href="WizardModel.html">Model</a> for more information about this method.
      */
     public void playCard(byte card) {
         if (isServer()) {
@@ -162,7 +162,7 @@ public class ClientServerThread extends Thread implements IWizardModel{
     }
     /**
      * Executes method in model and sends updated model to all clients. Only usable by the server.
-     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     * See <a href="WizardModel.html">Model</a> for more information about this method.
      */
     public void endTrick() {
         if (isServer()) {
@@ -172,7 +172,7 @@ public class ClientServerThread extends Thread implements IWizardModel{
     }
     /**
      * Executes method in model and sends updated model to all clients. Only usable by the server.
-     * See <a href="src.Model.WizardModel">Model</a> for more information about this method.
+     * See <a href="WizardModel.html">Model</a> for more information about this method.
      */
     public void endRound() {
         if (isServer()) {
@@ -182,67 +182,67 @@ public class ClientServerThread extends Thread implements IWizardModel{
     }
 
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public int isLegalTrickCall(int tricksCalled, int playerNum) {return model.isLegalTrickCall(tricksCalled, playerNum);}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public int isLegalMove(byte card) {return model.isLegalMove(card);}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public boolean isGameOver() {return model.isGameOver();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public boolean isTrickOver() {return model.isTrickOver();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public boolean isRoundOver() {return model.isRoundOver();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public boolean allPlayersCalledTricks() {return model.haveAllPlayersCalledTricks();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public List<Player> players() {return model.players();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public List<Byte> trick() {return model.trick();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public byte trump() {return model.trump();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public int round() {return model.round();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public int winner() {return model.trickWinner();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public int getCurrentPlayerNum() {return model.getCurrentPlayerNum();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public int getCurrentTrickCaller(){return model.getCurrentTrickCaller();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public List<Integer> getCurrentGameWinner() {return model.getCurrentGameWinner();}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public int getAssignedPlayerNum() {return assignedPlayerNumber;}
     /**
-     * see <a href="src.Model.WizardModel">Model</a> for more information about this method
+     * see <a href="WizardModel.html">Model</a> for more information about this method
      */
     public boolean hasGameEnded() {return gameEnded;}
     /**
